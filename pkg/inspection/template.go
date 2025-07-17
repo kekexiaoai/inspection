@@ -43,20 +43,20 @@ type Template struct {
 	Description    string         `yaml:"description"`
 	Version        string         `yaml:"version"`
 	CreatedBy      string         `yaml:"created_by"`
-	Schedule       Schedule       `yaml:"schedule" validate:"required,dive"`
+	Schedule       Schedule       `yaml:"schedule" validate:"required"`
 	TimeRange      string         `yaml:"time_range" validate:"required"`
 	Tags           []string       `yaml:"tags"`
-	TargetRegistry TargetRegistry `yaml:"target_registry" validate:"required,dive"`
-	Indicators     []Indicator    `yaml:"indicators" validate:"required,min=1,dive"`
-	ReportLayout   ReportLayout   `yaml:"report_layout" validate:"required,dive"`
+	TargetRegistry TargetRegistry `yaml:"target_registry" validate:"required"`
+	Indicators     []*Indicator   `yaml:"indicators" validate:"required,min=1,dive"`
+	ReportLayout   ReportLayout   `yaml:"report_layout" validate:"required"`
 }
 
 // SortIndicatorThresholds 解析模板后调用，对阈值按优先级排序
 func (tpl *Template) SortIndicatorThresholds() {
 	for i := range tpl.Indicators {
 		ind := &tpl.Indicators[i]
-		sort.Slice(ind.Thresholds, func(i, j int) bool {
-			return ThresholdLevelPriorities[ind.Thresholds[i].Level] < ThresholdLevelPriorities[ind.Thresholds[j].Level]
+		sort.Slice((*ind).Thresholds, func(i, j int) bool {
+			return ThresholdLevelPriorities[(*ind).Thresholds[i].Level] < ThresholdLevelPriorities[(*ind).Thresholds[j].Level]
 		})
 	}
 }
@@ -68,22 +68,22 @@ type Schedule struct {
 }
 
 type TargetRegistry struct {
-	Source string                 `yaml:"source" validate:"oneof=metadata"`
-	Query  map[string]interface{} `yaml:"query" validate:"required"`
+	Source string         `yaml:"source" validate:"oneof=metadata"`
+	Query  map[string]any `yaml:"query" validate:"required"`
 }
 
 type Indicator struct {
-	Name        string      `yaml:"name" validate:"required"`
-	Description string      `yaml:"description"`
-	Source      string      `yaml:"source" validate:"required,oneof=prometheus elasticsearch metadata"`
-	Type        string      `yaml:"type"   validate:"required,oneof=point trend alert_list"`
-	Query       interface{} `yaml:"query" validate:"required"`
-	TimeRange   string      `yaml:"time_range"`
-	Resolution  string      `yaml:"resolution"`
-	Thresholds  []Threshold `yaml:"thresholds"`
-	Required    bool        `yaml:"required"`
-	Display     Display     `yaml:"display" validate:"required,dive"`
-	Vars        []Variable  `yaml:"vars" validate:"dive"`
+	Name        string       `yaml:"name" validate:"required"`
+	Description string       `yaml:"description"`
+	Source      string       `yaml:"source" validate:"required,oneof=prometheus elasticsearch metadata"`
+	Type        string       `yaml:"type"   validate:"required,oneof=point trend alert_list"`
+	Query       any          `yaml:"query" validate:"required"`
+	TimeRange   string       `yaml:"time_range"`
+	Resolution  string       `yaml:"resolution"`
+	Thresholds  []*Threshold `yaml:"thresholds" validate:"dive"`
+	Required    bool         `yaml:"required"`
+	Display     Display      `yaml:"display" validate:"required"`
+	Vars        []Variable   `yaml:"vars" validate:"dive"`
 }
 
 // -----------------------------------------------------------------------------
@@ -267,7 +267,7 @@ func validateVarType(v Variable, val string) error {
 }
 
 // validateThresholdOrder 验证阈值顺序：禁止相同级别，且必须按优先级排列
-func validateThresholdOrder(ind Indicator) error {
+func validateThresholdOrder(ind *Indicator) error {
 	// 记录已出现的级别，确保唯一
 	seenLevels := make(map[string]bool)
 	lastPriority := 0 // 初始化为最低优先级
@@ -320,7 +320,7 @@ func getLevelByPriority(priority int) string {
 // Query Rendering (two-phase variable resolution)
 // -----------------------------------------------------------------------------
 
-func (tpl *Template) RenderQueryWithVars(ind Indicator, input map[string]string) (string, error) {
+func (tpl *Template) RenderQueryWithVars(ind *Indicator, input map[string]string) (string, error) {
 	qTemplate, ok := ind.Query.(string)
 	if !ok {
 		return "", fmt.Errorf("indicator query must be string template")

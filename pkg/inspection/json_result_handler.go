@@ -12,7 +12,7 @@ import (
 
 // JSONResultHandler 封装累积结果的状态
 type JSONResultHandler struct {
-	indicator Indicator
+	indicator *Indicator
 	result    *IndicatorResult
 	// 用于临时存储所有样本（因为处理器会被多次调用，每次处理一个样本）
 	samples []*model.Sample
@@ -22,7 +22,7 @@ type JSONResultHandler struct {
 // 返回值：
 //   - *JSONResultHandler：结构体指针，用于在所有数据处理完成后调用 Finalize() 生成最终结果
 //   - prom.ResultHandler：处理器函数，用于传递给 prom 包处理查询结果
-func NewJSONResultHandler(indicator Indicator) (*JSONResultHandler, prom.ResultHandler) {
+func NewJSONResultHandler(indicator *Indicator) (*JSONResultHandler, prom.ResultHandler) {
 	// 初始化处理器结构体，存储指标元信息和临时数据
 	handler := &JSONResultHandler{
 		indicator: indicator, // 保存指标元信息（如名称、阈值、显示配置等）
