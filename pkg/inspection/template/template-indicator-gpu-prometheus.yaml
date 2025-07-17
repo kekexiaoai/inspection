@@ -32,7 +32,29 @@ target_registry:
   source: metadata
   query:
     entity_type: gpu_node
-    region: "{{.Region}}"  # ⬅️ region 变量注入 dataCenterId?
+    region: "{{.Region}}"  # region 变量注入 dataCenterId?
+
+
+# -----------------------------------------
+# 全局变量定义，如果indicator中定义了，则会被覆盖
+# -----------------------------------------
+vars:
+  - name: TimeRange
+    type: string
+    required: true
+    default_value: "{{if .IndicatorTimeRange}}{{.IndicatorTimeRange}}{{else}}{{.GlobalTimeRange}}{{end}}"
+    description: 查询时间窗口，如 1h、6h、30m
+
+  - name: ClusterRegex
+    type: string
+    default_value: "10\\\\.120\\\\.[0-9]+\\\\.[0-9]+.*"
+    description: 匹配一组节点实例
+
+  - name: NodeSelector
+    type: string
+    required: true
+    value: "{{.ClusterRegex}}"
+    description: PromQL instance=~ 匹配表达式
 
 # -------------------------------
 # 巡检指标定义
@@ -79,19 +101,47 @@ indicators:
         default_value: "node-a[0-9]+"
         description: 匹配一组节点实例
 
-      # NodeSelector 最终用于 PromQL 中的 instance=~，从 ClusterRegex 派生
       - name: NodeSelector
         type: string
         required: true
         value: "{{.ClusterRegex}}"
         description: PromQL instance=~ 匹配表达式
 
-      # Region 影响目标设备筛选（上面 target_registry.query.region 用到）
-      - name: Region
-        type: enum
-        enum_values: ["A", "B", "C"]
-        default_value: "A"
-        description: 区域标识，控制设备归属范围
+    display:
+      type: table
+      unit: "%"
+      group_by: instance
+      summary_mode: count_by_status
+      missing_indicator: true
+      page_size: 20
+      fields:
+        - { name: target, label: 节点 }
+        - { name: value,  label: 利用率 }
+        - { name: status, label: 状态 }
+
+  - name: GPU 使用率-2
+    source: prometheus
+    type: point
+    description: 每台 GPU 节点过去一段时间内的最大卡使用率
+    query: |
+      max by (instance) (
+        max_over_time(DCGM_FI_DEV_GPU_UTIL{instance=~"{{.NodeSelector}}"}[{{.TimeRange}}])
+      )
+    # fallback 级别 3：每个指标独立默认时间范围
+    time_range: 3h
+    thresholds: # 阈值判断, 支持多个阈值,同级别不允许重复, 按优先级排序, 阈值判断兜底返回 默认值 ok
+      - level: critical  # 最高优先级（先判断） 对应的状态级别 允许的值（critical/warning/info)
+        value: 90 #阈值数值
+        operator: gt # 运算符：gt(>), gte(>=), lt(<), lte(<=), eq(==)
+      - level: warning   # 次高优先级
+        value: 70
+        operator: gt
+      - level: info
+        value: 60
+        operator: gt
+    required: true
+
+    vars:
 
     display:
       type: table

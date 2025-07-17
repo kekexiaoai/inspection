@@ -1,52 +1,76 @@
-######################################################################
-#  GPU 节点每日巡检模板（示例）
-#  ——————————————————————————————————————————
-#  - 支持 cron 周期
-#  - 统一目标设备集合（target_registry）
-#  - 每个指标支持摘要 / 分页
-#  - display 字段完整注释
-######################################################################
+###############################################################################
+# GPU 节点每日巡检模板（支持 TimeRange 多级 fallback，统一变量声明）
+###############################################################################
+template_name: daily-gpu-inspection
+display_name: GPU 节点每日巡检
+description: 每日检查 GPU 节点的使用率、告警与网络可达性
+version: v2
+created_by: system
 
-# ---------- 基本信息 ----------
-template_name: daily-gpu-inspection          # ✅ 模板英文唯一标识
-display_name: GPU 节点每日巡检                 # ✅ 报告展示名称
-description: 每日检查 GPU 节点的资源使用、网络可达性与异常登录情况
-version: v1                                  # ✅ 模板版本
-created_by: admin                            # ✅ 创建人
-
-# ---------- 调度周期（cron） ----------
+# -------------------------------
+# 模板执行计划：每天上午 9 点
+# -------------------------------
 schedule:
-  cron: "0 9 * * *"                          # ⏰ 每日 09:00 执行
-  description: 每日上午 9 点自动巡检
-  enabled: true                              # true→注册为定时任务，false→仅手动
+  cron: "0 9 * * *"
+  description: 每日 9 点巡检
+  enabled: true
 
-# ---------- 默认时间窗口 ----------
-time_range: 1h                               # 若指标未单独指定，则默认最近 1 小时
+# -------------------------------
+# 全局默认时间范围（可被指标、变量覆盖）
+# -------------------------------
+time_range: 1h
 
-# ---------- 标签（可选） ----------
-tags: [gpu, daily, automation]
+# -------------------------------
+# 标签：便于分类管理
+# -------------------------------
+tags: [ gpu, daily ]
 
-# ---------- 目标设备集合 ----------
+# -------------------------------
+# 目标设备集合：从元数据中查询
+# -------------------------------
 target_registry:
-  source: metadata                           # 从 CMDB/API 获取纳管信息
+  source: metadata
   query:
-    entity_type: gpu_node                    # 设备类型
-    filter:
-      enabled: true
-      region: A区
+    entity_type: gpu_node
+    region: "{{.Region}}"  # region 变量注入 dataCenterId?
 
-# ---------- 指标定义 ----------
+# 全局变量定义，如果indicator中定义了，则会被覆盖
+vars:
+  - name: TimeRange
+    type: string
+    required: true
+    default_value: "{{if .IndicatorTimeRange}}{{.IndicatorTimeRange}}{{else}}{{.GlobalTimeRange}}{{end}}"
+    description: 查询时间窗口，如 1h、6h、30m
+
+  - name: ClusterRegex
+    type: string
+    default_value: "10\\\\.120\\\\.[0-9]+\\\\.[0-9]+.*"
+    description: 匹配一组节点实例
+
+  - name: NodeSelector
+    type: string
+    required: true
+    value: "{{.ClusterRegex}}"
+    description: PromQL instance=~ 匹配表达式
+
+# -------------------------------
+# 巡检指标定义
+# -------------------------------
 indicators:
 
-  # 1. GPU 使用率（节点最大值，摘要+分页）
+  # ---------------------------
+  # GPU 使用率指标（Prometheus）
+  # ---------------------------
   - name: GPU 使用率
-    description: 节点中所有 GPU 卡过去 1 小时的最大利用率
     source: prometheus
     type: point
+    description: 每台 GPU 节点过去一段时间内的最大卡使用率
     query: |
       max by (instance) (
-        max_over_time(DCGM_FI_DEV_GPU_UTIL{instance=~"$node"}[1h])
+        max_over_time(DCGM_FI_DEV_GPU_UTIL{instance=~"{{.NodeSelector}}"}[{{.TimeRange}}])
       )
+    # fallback 级别 3：每个指标独立默认时间范围
+    time_range: 2h
     thresholds: # 阈值判断, 支持多个阈值,同级别不允许重复, 按优先级排序, 阈值判断兜底返回 默认值 ok
       - level: critical  # 最高优先级（先判断） 对应的状态级别 允许的值（critical/warning/info)
         value: 90 #阈值数值
@@ -57,93 +81,44 @@ indicators:
       - level: info
         value: 60
         operator: gt
-    required: true                           # 无数据即视为失败
-    display:
-      type: table                            # 渲染类型：表格
-      unit: "%"                              # 单位
-      group_by: instance                     # 聚合维度
-      missing_indicator: true                # 显示缺失节点
-      summary_mode: count_by_status          # ✅ 参与顶部摘要
-      page_size: 20                          # ✅ 分页大小（明细每页 20 条）
-      fields:                                # 表格列
-        - name: target
-          label: 节点
-        - name: value
-          label: 利用率
-        - name: status
-          label: 状态
+    required: true
 
-  # 2. GPU 使用趋势（24 h 折线图，同样支持摘要）
-  - name: GPU 使用趋势
-    description: 最近 24 小时 GPU 利用率变化曲线
-    source: prometheus
-    type: trend
-    query: |
-      DCGM_FI_DEV_GPU_UTIL{instance=~"$node"}
-    time_range: 24h
-    resolution: 5m
+    vars:
+      # TimeRange 是特殊变量：允许用户注入，未注入时 fallback 到 indicator / global
+      - name: TimeRange
+        type: string
+        required: true
+        default_value: "{{if .IndicatorTimeRange}}{{.IndicatorTimeRange}}{{else}}{{.GlobalTimeRange}}{{end}}"
+        description: 查询时间窗口，如 1h、6h、30m
+
+      - name: ClusterRegex
+        type: string
+        default_value: "node-a[0-9]+"
+        description: 匹配一组节点实例
+
+      - name: NodeSelector
+        type: string
+        required: true
+        value: "{{.ClusterRegex}}"
+        description: PromQL instance=~ 匹配表达式
+
+
     display:
-      type: line_chart
+      type: table
       unit: "%"
       group_by: instance
-      missing_indicator: true
-      summary_mode: count_by_status          # 也生成摘要（OK/Warning/…）
-
-  # 3. BMC 登录失败次数（ES）
-  - name: BMC 登录失败次数
-    description: 最近 1 小时 BMC 登录失败日志条数
-    source: elasticsearch
-    type: point
-    query:
-      index: bmc-logs-*
-      query_string: 'message:(\"Login Fail\" OR \"Invalid Password\") AND host.name:\"$node\"'
-      time_range: 1h
-    threshold:
-      count_gt: 3
-      level: warning
-    display:
-      type: table
-      unit: 次
-      group_by: host.name
-      missing_indicator: true
       summary_mode: count_by_status
+      missing_indicator: true
       page_size: 20
+      fields:
+        - { name: target, label: 节点 }
+        - { name: value,  label: 利用率 }
+        - { name: status, label: 状态 }
 
-  # 4. Ping 可达性（状态灯）
-  - name: Ping 可达性
-    description: blackbox_exporter 探测节点 ICMP 可达性
-    source: prometheus
-    type: point
-    query: |
-      probe_success{job="blackbox-ping", instance=~"$node"}
-    threshold:
-      eq: 0
-      level: critical
-    required: true
-    display:
-      type: status_light
-      unit: boolean
-      missing_indicator: true
-      summary_mode: count_by_status
-
-  # 5. 当前活跃告警（metadata）
-  - name: 当前活跃告警
-    description: 最近 1 小时内的告警记录
-    source: metadata
-    type: alert_list
-    query:
-      level: warning
-      time_range: 1h
-    display:
-      type: table
-      summary_mode: total_count              # 只统计告警数量
-
-# ---------- 报告布局 ----------
+# -------------------------------
+# 报告布局
+# -------------------------------
 report_layout:
   sections:
-    - title: 节点资源使用情况
-      include: ["GPU 使用率", "GPU 使用趋势"]
-    - title: 异常检测
-      include: ["BMC 登录失败次数", "当前活跃告警"]
-    - title: 网络状态
-      include: ["Ping 可达性"]
+    - title: 节点资源使用状态
+      include: [ "GPU 使用率" ]

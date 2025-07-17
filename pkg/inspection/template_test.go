@@ -255,3 +255,37 @@ func TestRenderGPUUsageWithJSON_result(t *testing.T) {
 	// 输出结果
 	fmt.Println("Final JSON:\n", string(resultJSON))
 }
+
+func TestRenderGPUUsageWithJSON_result_2(t *testing.T) {
+	tpl, err := ParseTemplateFile("template/template-indicator-gpu-prometheus.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ind := tpl.Indicators[1]
+
+	query, err := tpl.RenderQueryWithVars(ind, map[string]string{
+		// "ClusterRegex": `10\\.120\\.[0-9]+\\.[0-9]+`,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("Rendered Query:\n", query)
+
+	// 创建处理器：同时获取结构体指针和处理器函数
+	jsonHandler, resultHandler := NewJSONResultHandler(ind)
+
+	// 执行查询：传递 resultHandler 给 prom 包
+	now := time.Now()
+	if err := prom.ExecuteQuery(globalClient, query, now, resultHandler); err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	// 生成最终 JSON：通过 jsonHandler 结构体指针调用 Finalize()
+	resultJSON, err := jsonHandler.Finalize()
+	if err != nil {
+		t.Fatalf("Finalize failed: %v", err)
+	}
+
+	// 输出结果
+	fmt.Println("Final JSON:\n", string(resultJSON))
+}

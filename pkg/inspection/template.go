@@ -47,6 +47,7 @@ type Template struct {
 	TimeRange      string         `yaml:"time_range" validate:"required"`
 	Tags           []string       `yaml:"tags"`
 	TargetRegistry TargetRegistry `yaml:"target_registry" validate:"required"`
+	Vars           []Variable     `yaml:"vars" validate:"dive"` // 全局变量
 	Indicators     []*Indicator   `yaml:"indicators" validate:"required,min=1,dive"`
 	ReportLayout   ReportLayout   `yaml:"report_layout" validate:"required"`
 }
@@ -317,7 +318,7 @@ func getLevelByPriority(priority int) string {
 }
 
 // -----------------------------------------------------------------------------
-// Query Rendering (two-phase variable resolution)
+// Query Rendering
 // -----------------------------------------------------------------------------
 
 func (tpl *Template) RenderQueryWithVars(ind *Indicator, input map[string]string) (string, error) {
@@ -326,59 +327,46 @@ func (tpl *Template) RenderQueryWithVars(ind *Indicator, input map[string]string
 		return "", fmt.Errorf("indicator query must be string template")
 	}
 
-	// -------- base context with reserved keys --------
-	ctxValues := map[string]string{
+	// 初始化基础上下文
+	values := tpl.initBaseContext(ind)
+
+	// 创建处理器链
+	processors := []varProcessor{
+		globalVarProcessor{tpl: tpl, input: input},
+		indicatorVarProcessor{ind: ind, input: input},
+	}
+
+	// 依次执行处理器
+	for _, p := range processors {
+		if err := p.processVars(values); err != nil {
+			return "", err
+		}
+	}
+
+	// 确保 TimeRange 存在
+	if _, ok := values["TimeRange"]; !ok {
+		if values["IndicatorTimeRange"] != "" {
+			values["TimeRange"] = values["IndicatorTimeRange"]
+		} else {
+			values["TimeRange"] = values["GlobalTimeRange"]
+		}
+	}
+
+	// 渲染最终查询
+	return tpl.renderQuery(qTemplate, values)
+}
+
+// initBaseContext 初始化基础上下文
+func (tpl *Template) initBaseContext(ind *Indicator) map[string]string {
+	return map[string]string{
 		"IndicatorTimeRange": ind.TimeRange,
 		"GlobalTimeRange":    tpl.TimeRange,
 		"IndicatorName":      ind.Name,
 	}
+}
 
-	// -------- Pass-1: put non-template raw values into ctxValues --------
-	for _, v := range ind.Vars {
-		raw := pickRaw(v, input)
-		if raw == "" {
-			continue
-		}
-		if !containsTpl(raw) { // constant value, safe to insert now
-			if err := validateVarType(v, raw); err != nil {
-				return "", err
-			}
-			ctxValues[v.Name] = raw
-		}
-	}
-
-	// -------- Pass-2: render template-containing values --------
-	for _, v := range ind.Vars {
-		if _, ok := ctxValues[v.Name]; ok {
-			continue // already resolved in pass-1
-		}
-		raw := pickRaw(v, input)
-		if raw == "" {
-			if v.Required {
-				return "", fmt.Errorf("missing required variable: %s", v.Name)
-			}
-			continue
-		}
-		rendered, err := renderStringTemplate(raw, ctxValues)
-		if err != nil {
-			return "", err
-		}
-		if err := validateVarType(v, rendered); err != nil {
-			return "", err
-		}
-		ctxValues[v.Name] = rendered
-	}
-
-	// -------- Ensure TimeRange present --------
-	if _, ok := ctxValues["TimeRange"]; !ok {
-		if ctxValues["IndicatorTimeRange"] != "" {
-			ctxValues["TimeRange"] = ctxValues["IndicatorTimeRange"]
-		} else {
-			ctxValues["TimeRange"] = ctxValues["GlobalTimeRange"]
-		}
-	}
-
-	// -------- Render final PromQL/DSL --------
+// renderQuery 渲染最终查询
+func (tpl *Template) renderQuery(qTemplate string, ctxValues map[string]string) (string, error) {
 	t, err := template.New("q").Parse(qTemplate)
 	if err != nil {
 		return "", err
@@ -387,18 +375,5 @@ func (tpl *Template) RenderQueryWithVars(ind *Indicator, input map[string]string
 	if err := t.Execute(&buf, ctxValues); err != nil {
 		return "", err
 	}
-	return buf.String(), nil
-}
-
-// Helper to safely execute small templates for variable substitution
-func renderStringTemplate(tmplStr string, ctxValues map[string]string) (string, error) {
-	// 自定义函数映射
-	funcMap := template.FuncMap{}
-	tmpl, err := template.New("var").Funcs(funcMap).Parse(tmplStr)
-	if err != nil {
-		return tmplStr, err
-	}
-	var buf bytes.Buffer
-	_ = tmpl.Execute(&buf, ctxValues)
 	return buf.String(), nil
 }
