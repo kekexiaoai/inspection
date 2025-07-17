@@ -1,14 +1,15 @@
 package inspection
 
 type IndicatorResult struct {
-	Indicator   string        `json:"indicator"`
-	Type        string        `json:"type"`
-	Unit        string        `json:"unit"`
-	DisplayType string        `json:"display_type"`
-	Summary     Summary       `json:"summary"`
-	Page        PageInfo      `json:"page"`
-	Highlight   HighlightInfo `json:"highlight"`
-	Values      []ValueItem   `json:"values"`
+	Indicator   string           `json:"indicator"`
+	Type        string           `json:"type"`
+	Unit        string           `json:"unit"`
+	DisplayType string           `json:"display_type"`
+	Summary     Summary          `json:"summary"`
+	Page        PageInfo         `json:"page"`
+	Highlight   HighlightInfo    `json:"highlight"`
+	Values      []ValueItem      `json:"values"`
+	Fields      []map[string]any `json:"fields,omitempty"`
 }
 
 type Summary struct {

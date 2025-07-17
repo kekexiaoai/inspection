@@ -158,13 +158,13 @@ type Variable struct {
 }
 
 type Display struct {
-	Type             string              `yaml:"type" validate:"required,oneof=table line_chart status_light bar_chart heatmap"`
-	Unit             string              `yaml:"unit"`
-	GroupBy          string              `yaml:"group_by"`
-	MissingIndicator bool                `yaml:"missing_indicator"`
-	SummaryMode      string              `yaml:"summary_mode" validate:"omitempty,oneof=count_by_status total_count"`
-	PageSize         int                 `yaml:"page_size" validate:"omitempty,min=1"`
-	Fields           []map[string]string `yaml:"fields"`
+	Type             string           `yaml:"type" validate:"required,oneof=table line_chart status_light bar_chart heatmap"`
+	Unit             string           `yaml:"unit"`
+	GroupBy          string           `yaml:"group_by"`
+	MissingIndicator bool             `yaml:"missing_indicator"`
+	SummaryMode      string           `yaml:"summary_mode" validate:"omitempty,oneof=count_by_status total_count"`
+	PageSize         int              `yaml:"page_size" validate:"omitempty,min=1"`
+	Fields           []map[string]any `yaml:"fields"`
 }
 
 type ReportLayout struct {

@@ -1,0 +1,100 @@
+{
+  "indicator": "GPU 使用率",
+  "type": "point",
+  "unit": "%",
+  "display_type": "table",
+  "summary": {
+    "total": 7,
+    "ok": 7,
+    "info": 0,
+    "warning": 0,
+    "critical": 0,
+    "missing": 0
+  },
+  "page": {
+    "size": 20,
+    "index": 1,
+    "has_more": false
+  },
+  "highlight": {
+    "top_n": 5,
+    "values": [
+      {
+        "target": "10.120.1.39",
+        "value": 0,
+        "status": "ok"
+      },
+      {
+        "target": "10.120.1.64",
+        "value": 0,
+        "status": "ok"
+      },
+      {
+        "target": "10.120.1.41",
+        "value": 0,
+        "status": "ok"
+      },
+      {
+        "target": "10.120.1.40",
+        "value": 0,
+        "status": "ok"
+      },
+      {
+        "target": "10.120.1.38",
+        "value": 0,
+        "status": "ok"
+      }
+    ]
+  },
+  "values": [
+    {
+      "target": "10.120.1.39",
+      "value": 0,
+      "status": "ok"
+    },
+    {
+      "target": "10.120.1.64",
+      "value": 0,
+      "status": "ok"
+    },
+    {
+      "target": "10.120.1.41",
+      "value": 0,
+      "status": "ok"
+    },
+    {
+      "target": "10.120.1.40",
+      "value": 0,
+      "status": "ok"
+    },
+    {
+      "target": "10.120.1.38",
+      "value": 0,
+      "status": "ok"
+    },
+    {
+      "target": "10.120.1.42",
+      "value": 0,
+      "status": "ok"
+    },
+    {
+      "target": "10.120.1.63",
+      "value": 0,
+      "status": "ok"
+    }
+  ],
+  "fields": [
+    {
+      "label": "节点",
+      "name": "target"
+    },
+    {
+      "label": "利用率",
+      "name": "value"
+    },
+    {
+      "label": "状态",
+      "name": "status"
+    }
+  ]
+}

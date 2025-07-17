@@ -40,6 +40,8 @@ func NewJSONResultHandler(indicator *Indicator) (*JSONResultHandler, prom.Result
 				TopN: 5, // 默认提取前5个异常项作为高亮
 			},
 			Values: []ValueItem{}, // 存储具体数据项
+
+			Fields: indicator.Display.Fields, // 显示字段配置
 		},
 		samples: []*model.Sample{}, // 临时存储所有 *model.Sample 类型的样本（即时查询结果）
 	}
