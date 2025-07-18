@@ -242,7 +242,7 @@ func (h *JSONResultHandler) sortAndExtractHighlights() {
 	// 1. 按逻辑过滤符合条件的项（支持 and/or）
 	logic := config.Logic
 	if logic == "" {
-		logic = "or" // 兜底默认 or（与 ParseTemplateBytes 保持一致）
+		logic = LogicOr // 兜底默认 or（与 ParseTemplateBytes 保持一致）
 	}
 	filtered := h.filterByConditions(config.Conditions, logic)
 
@@ -250,11 +250,11 @@ func (h *JSONResultHandler) sortAndExtractHighlights() {
 	limit := h.parseHighlightLimit(config.Limit)
 	if limit > 0 && len(filtered) > limit {
 		// 根据 limit 类型排序（top 降序，bottom 升序）
-		if strings.HasPrefix(config.Limit, "top") {
+		if strings.HasPrefix(config.Limit, LimitTop) {
 			sort.Slice(filtered, func(i, j int) bool {
 				return *filtered[i].Value > *filtered[j].Value
 			})
-		} else if strings.HasPrefix(config.Limit, "bottom") {
+		} else if strings.HasPrefix(config.Limit, LimitBottom) {
 			sort.Slice(filtered, func(i, j int) bool {
 				return *filtered[i].Value < *filtered[j].Value
 			})
@@ -276,9 +276,9 @@ func (h *JSONResultHandler) filterByConditions(conditions []Condition, logic str
 
 		// 根据 logic 判断满足任一条件（or）还是所有条件（and）
 		matches := false
-		if logic == "and" {
+		if logic == LogicAnd {
 			matches = h.matchesAllConditions(item, conditions)
-		} else { // 默认 or
+		} else { // 默认 LogicOr
 			matches = h.matchesAnyCondition(item, conditions)
 		}
 
@@ -326,12 +326,12 @@ func (h *JSONResultHandler) matchesSingleCondition(item ValueItem, cond Conditio
 
 // 解析高亮 limit 配置
 func (h *JSONResultHandler) parseHighlightLimit(limitStr string) int {
-	if limitStr == "" || limitStr == "all" {
+	if limitStr == "" || limitStr == LimitAll {
 		return -1 // 不限制数量
 	}
 
 	// 解析 top_N（如 top_5）
-	if strings.HasPrefix(limitStr, "top_") {
+	if strings.HasPrefix(limitStr, LimitTop) {
 		n, err := strconv.Atoi(limitStr[4:])
 		if err == nil && n > 0 {
 			return n
@@ -339,7 +339,7 @@ func (h *JSONResultHandler) parseHighlightLimit(limitStr string) int {
 	}
 
 	// 解析 bottom_N（如 bottom_3）
-	if strings.HasPrefix(limitStr, "bottom_") {
+	if strings.HasPrefix(limitStr, LimitBottom) {
 		n, err := strconv.Atoi(limitStr[7:])
 		if err == nil && n > 0 {
 			return n

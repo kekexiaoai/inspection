@@ -109,15 +109,15 @@ func (ind *Indicator) DetermineStatus(value float64) string {
 // meetsCondition 判断数值是否满足阈值条件
 func meetsCondition(value float64, op string, threshold float64) bool {
 	switch op {
-	case "gt":
+	case OpGt:
 		return value > threshold
-	case "gte":
+	case OpGte:
 		return value >= threshold
-	case "lt":
+	case OpLt:
 		return value < threshold
-	case "lte":
+	case OpLte:
 		return value <= threshold
-	case "eq":
+	case OpEq:
 		return value == threshold
 	default:
 		return false
