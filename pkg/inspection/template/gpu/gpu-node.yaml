@@ -1,0 +1,236 @@
+###############################################################################
+# GPU 节点每日巡检模板（节点级聚合监控）
+###############################################################################
+template_name: daily-gpu-node-inspection
+display_name: GPU节点每日巡检（聚合视角）
+description: 每日检查GPU节点的整体健康状态、资源负载与关键依赖（网络/存储）
+version: v2
+created_by: system
+
+# -------------------------------
+# 模板执行计划：每天上午9点（日常高频）
+# -------------------------------
+schedule:
+  cron: "0 9 * * *"
+  description: 每日9点执行节点级聚合巡检
+  enabled: true
+
+# -------------------------------
+# 全局默认时间范围（覆盖过去24小时趋势）
+# -------------------------------
+time_range: 24h
+
+# -------------------------------
+# 标签：便于分类管理
+# -------------------------------
+tags: [gpu, node, daily, aggregate]
+
+# -------------------------------
+# 目标设备集合：筛选所有GPU节点
+# -------------------------------
+target_registry:
+  source: metadata
+  query:
+    entity_type: gpu_node
+    region: "{{.Region}}"  # 按区域筛选节点
+    status: running  # 只巡检运行中节点
+
+# -----------------------------------------
+# 全局变量定义，如果indicator中定义了，则会被覆盖
+# -----------------------------------------
+vars:
+  - name: TimeRange
+    type: string
+    required: true
+    default_value: "{{if .IndicatorTimeRange}}{{.IndicatorTimeRange}}{{else}}{{.GlobalTimeRange}}{{end}}"
+    description: 查询时间窗口，如 1h、6h、30m
+
+  - name: ClusterRegex
+    type: string
+    default_value: "10\\\\.120\\\\.[0-9]+\\\\.[0-9]+.*"
+    description: 匹配一组节点实例
+
+  - name: NodeSelector
+    type: string
+    required: true
+    value: "{{.ClusterRegex}}"
+    description: PromQL instance=~ 匹配表达式
+
+
+# -------------------------------
+# 巡检指标定义（节点级聚合指标）
+# -------------------------------
+indicators:
+
+  # ---------------------------
+  # 节点存活与基础状态
+  # ---------------------------
+  - name: 节点存活状态
+    source: prometheus
+    type: point
+    description: 节点是否在线（基于node_exporter存活探针）
+    query: |
+      up{app="node-exporter", device_type=~"{{.DeviceTypeRegex}}"}
+    thresholds:
+      - level: critical
+        value: 0
+        operator: eq
+        description: 节点离线
+      - level: info
+        value: 1
+        operator: eq
+        description: 节点在线
+    vars:
+      - name: DeviceTypeRegex
+        type: string
+        required: true
+        default_value: ".*"
+
+    display:
+      type: table
+      unit: "台"
+      group_by: instance
+      summary_mode: count_by_status
+      highlight:
+        enabled: true        # 支持按条件高亮
+        limit: all           # 支持 "all"、"top_n"、"bottom_n"
+        conditions:          # 支持多条件
+          - level: critical  # 支持按级别(可选，如果填写了级别，则会在级别内匹配条件)
+            value: 0        # 支持按阈值(可选, value和 operator 必须同时出现)
+            operator: eq     # 支持按操作符(可选, value和 operator 必须同时出现)
+      missing_indicator: true
+      fields:
+        - { name: target, label: 节点 }
+        - { name: value, label: 存活状态 }
+        - { name: status, label: 状态 }
+
+
+  - name: 节点平均GPU算力利用率
+    source: prometheus
+    type: range
+    description: 节点内所有GPU卡的平均算力利用率（反映整体负载）
+    query: |
+      avg by (instance) (avg_over_time(nvidia_smi_utilization_gpu_ratio[{{.TimeRange}}])) * 100
+    time_range: 24h
+    thresholds:
+      - level: warning
+        value: 80
+        operator: gt
+        description: 平均利用率>80%（负载较高）
+      - level: info
+        value: 50
+        operator: gte
+        description: 平均利用率50%-80%（负载适中）
+    display:
+      type: table
+      unit: "%"
+      group_by: node
+      summary_mode: count_by_status
+      highlight:
+        enabled: true        # 支持按条件高亮
+        limit: top_5         # 支持 "all"、"top_n"、"bottom_n"
+        conditions:          # 支持多条件
+          - value: 70        # 支持按阈值(可选, value和 operator 必须同时出现)
+            operator: gt     # 支持按操作符(可选, value和 operator 必须同时出现)
+            level:           # 支持按级别(可选，如果填写了级别，则会在级别内匹配条件)
+      missing_indicator: true
+      fields:
+        - { name: target, label: 节点 }
+        - { name: value, label: 平均算力利用率 }
+        - { name: status, label: 负载状态 }
+
+
+  - name: 节点内最高GPU温度
+    source: prometheus
+    type: range
+    description: 节点内所有GPU卡的最高温度（反映散热风险）
+    query: |
+      max by (instance) (
+        max_over_time(nvidia_smi_temperature_gpu[{{.TimeRange}}])
+      )
+    #time_range: 1h
+    thresholds:
+      - level: critical
+        value: 90
+        operator: gt
+        description: 最高温度>90°（可能触发降频）
+      - level: warning
+        value: 85
+        operator: gt
+        description: 最高温度85-90°（散热压力大）
+      - level: info
+        value: 85
+        operator: lte
+        description: 最高温度≤85°（正常）
+    display:
+      type: table
+      unit: "°C"
+      group_by: node
+      summary_mode: count_by_status
+      highlight:
+        enabled: true        # 支持按条件高亮
+        limit: all           # 支持 "all"、"top_n"、"bottom_n"
+        conditions:          # 支持多条件
+          - value: 70        # 支持按阈值(可选, value和 operator 必须同时出现)
+            operator: gte     # 支持按操作符(可选, value和 operator 必须同时出现)
+#          - level: info      # 支持按级别(可选，如果填写了级别，则会在级别内匹配条件)
+#            value: 70        # 支持按阈值(可选, value和 operator 必须同时出现)
+#            operator: gte     # 支持按操作符(可选, value和 operator 必须同时出现)
+      missing_indicator: true
+      fields:
+        - { name: target, label: 节点 }
+        - { name: value, label: 最高GPU温度 }
+        - { name: status, label: 散热状态 }
+
+
+  - name: 节点平均GPU温度
+    source: prometheus
+    type: range
+    description: 节点内所有GPU卡的平均温度
+    query: |
+      avg by (instance) (
+        max_over_time(nvidia_smi_temperature_gpu[{{.TimeRange}}])
+      )
+    #time_range: 1h
+    thresholds:
+      - level: critical
+        value: 90
+        operator: gt
+        description: 平均温度>90°（可能触发降频）
+      - level: warning
+        value: 85
+        operator: gt
+        description: 平均温度85-90°（散热压力大）
+      - level: info
+        value: 85
+        operator: lte
+        description: 平均温度≤85°（正常）
+    display:
+      type: table
+      unit: "°C"
+      group_by: node
+      summary_mode: count_by_status
+      highlight:
+        enabled: true        # 支持按条件高亮
+        limit: top_3         # 支持 "all"、"top_n"、"bottom_n"
+        conditions:          # 支持多条件
+          - value: 60        # 支持按阈值(可选, value和 operator 必须同时出现)
+            operator: gt     # 支持按操作符(可选, value和 operator 必须同时出现)
+      missing_indicator: true
+      fields:
+        - { name: target, label: 节点 }
+        - { name: value, label: 平均GPU温度 }
+        - { name: status, label: 散热状态 }
+
+
+# -------------------------------
+# 报告布局（节点级聚合视角）
+# -------------------------------
+report_layout:
+  sections:
+    - title: 节点基础健康状态
+      Indicators: ["节点存活状态"]
+    - title: 节点资源负载概况
+      Indicators: ["节点平均GPU算力利用率", "节点平均CPU利用率", "节点平均内存利用率"]
+    - title: 硬件风险预警
+      Indicators: ["节点内最高GPU温度", "节点平均GPU温度"]

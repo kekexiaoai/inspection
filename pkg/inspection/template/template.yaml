@@ -1,6 +1,4 @@
-###############################################################################
-# GPU 节点每日巡检模板（支持 TimeRange 多级 fallback，统一变量声明）
-###############################################################################
+---
 template_name: daily-gpu-inspection
 display_name: GPU 节点每日巡检
 description: 每日检查 GPU 节点的使用率、告警与网络可达性
@@ -36,6 +34,7 @@ target_registry:
 
 # 全局变量定义，如果indicator中定义了，则会被覆盖
 vars:
+  # TimeRange 是特殊变量：允许用户注入，未注入时 fallback 到 indicator / global
   - name: TimeRange
     type: string
     required: true
@@ -71,6 +70,19 @@ indicators:
       )
     # fallback 级别 3：每个指标独立默认时间范围
     time_range: 2h
+
+    vars:
+      - name: ClusterRegex
+        type: string
+        default_value: "node-a[0-9]+"
+        description: 匹配一组节点实例
+
+      - name: NodeSelector
+        type: string
+        required: true
+        value: "{{.ClusterRegex}}"
+        description: PromQL instance=~ 匹配表达式
+
     thresholds: # 阈值判断, 支持多个阈值,同级别不允许重复, 按优先级排序, 阈值判断兜底返回 默认值 ok
       - level: critical  # 最高优先级（先判断） 对应的状态级别 允许的值（critical/warning/info)
         value: 90 #阈值数值
@@ -83,26 +95,6 @@ indicators:
         operator: gt
     required: true
 
-    vars:
-      # TimeRange 是特殊变量：允许用户注入，未注入时 fallback 到 indicator / global
-      - name: TimeRange
-        type: string
-        required: true
-        default_value: "{{if .IndicatorTimeRange}}{{.IndicatorTimeRange}}{{else}}{{.GlobalTimeRange}}{{end}}"
-        description: 查询时间窗口，如 1h、6h、30m
-
-      - name: ClusterRegex
-        type: string
-        default_value: "node-a[0-9]+"
-        description: 匹配一组节点实例
-
-      - name: NodeSelector
-        type: string
-        required: true
-        value: "{{.ClusterRegex}}"
-        description: PromQL instance=~ 匹配表达式
-
-
     display:
       type: table
       unit: "%"
@@ -114,6 +106,47 @@ indicators:
         - { name: target, label: 节点 }
         - { name: value,  label: 利用率 }
         - { name: status, label: 状态 }
+      highlight:
+        enabled: true        # 是否启用高亮
+        logic: or            # 多条件逻辑关系，支持 and/or，可以不写，默认 or
+        limit: all           # 支持 "all"、"top_n"、"bottom_n"
+        conditions:          # 支持多条件
+          - level: critical  # 支持按级别(可选，如果填写了基本，则会在级别内匹配条件)
+            value: 0         # 支持按阈值(可选, value和 operator 必须同时出现)
+            operator: eq     # 支持按操作符(可选, value和 operator 必须同时出现) 运算符：gt(>), gte(>=), lt(<), lte(<=), eq(==)
+#      # 示例1：高亮所有 critical 级别
+#      highlight:
+#        enabled: true
+#        limit: all
+#        conditions:
+#          - level: critical
+#
+#      # 示例2：高亮数值 > 80 的前5个
+#      highlight:
+#        enabled: true
+#        limit: top_5
+#        conditions:
+#          - value: 80
+#            operator: gt
+#
+#      # 示例3：复合条件（满足任意一个条件）
+#      highlight:
+#        enabled: true
+#        limit: all
+#        conditions:
+#          - level: warning
+#          - value: 70
+#            operator: gte
+#
+#      # 示例3：复合条件（同时满足两个条件）
+#      highlight:
+#        enabled: true
+#        limit: all
+#        logic: or            # 多条件逻辑关系，支持 and/or，可以不写，默认 or
+#        conditions:
+#          - level: warning
+#          - value: 70
+#            operator: gte
 
 # -------------------------------
 # 报告布局
@@ -122,3 +155,5 @@ report_layout:
   sections:
     - title: 节点资源使用状态
       include: [ "GPU 使用率" ]
+    - title: 节点基础健康状态
+      Indicators: [ "节点存活状态", "节点平均GPU温度" ] # 需要在上面定义过的Indicator name

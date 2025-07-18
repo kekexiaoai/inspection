@@ -1,0 +1,1569 @@
+{
+  "template": {
+    "name": "daily-gpu-node-inspection",
+    "executed_by": "admin",
+    "executed_at": "2025-07-18T16:01:19.274591+08:00"
+  },
+  "summary_overviews": [
+    {
+      "indicator": "节点存活状态",
+      "unit": "台",
+      "total": 74,
+      "ok": 0,
+      "warning": 0,
+      "critical": 3,
+      "missing": 0
+    },
+    {
+      "indicator": "节点平均GPU算力利用率",
+      "unit": "%",
+      "total": 59,
+      "ok": 15,
+      "warning": 16,
+      "critical": 0,
+      "missing": 0
+    },
+    {
+      "indicator": "节点内最高GPU温度",
+      "unit": "°C",
+      "total": 59,
+      "ok": 0,
+      "warning": 0,
+      "critical": 0,
+      "missing": 0
+    },
+    {
+      "indicator": "节点平均GPU温度",
+      "unit": "°C",
+      "total": 59,
+      "ok": 0,
+      "warning": 0,
+      "critical": 0,
+      "missing": 0
+    }
+  ],
+  "sections": [
+    {
+      "title": "节点基础健康状态",
+      "indicators": [
+        "节点存活状态"
+      ]
+    },
+    {
+      "title": "节点资源负载概况",
+      "indicators": [
+        "节点平均GPU算力利用率",
+        "节点平均CPU利用率",
+        "节点平均内存利用率"
+      ]
+    },
+    {
+      "title": "硬件风险预警",
+      "indicators": [
+        "节点内最高GPU温度",
+        "节点平均GPU温度"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "indicator": "节点存活状态",
+      "type": "point",
+      "unit": "台",
+      "display_type": "table",
+      "summary": {
+        "total": 74,
+        "ok": 0,
+        "info": 71,
+        "warning": 0,
+        "critical": 3,
+        "missing": 0
+      },
+      "page": {
+        "size": 0,
+        "index": 1,
+        "has_more": false
+      },
+      "highlight": {
+        "enabled": true,
+        "values": [
+          {
+            "target": "10.111.101.221",
+            "value": 0,
+            "status": "critical"
+          },
+          {
+            "target": "10.111.101.222",
+            "value": 0,
+            "status": "critical"
+          },
+          {
+            "target": "10.114.4.114",
+            "value": 0,
+            "status": "critical"
+          }
+        ]
+      },
+      "values": [
+        {
+          "target": "10.111.101.8",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.221",
+          "value": 0,
+          "status": "critical"
+        },
+        {
+          "target": "10.111.101.141",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.11",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.103",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.224",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.10",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.3",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.223",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.5",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.139",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.2",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.4",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.140",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.136",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.7",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.9",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.6",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.222",
+          "value": 0,
+          "status": "critical"
+        },
+        {
+          "target": "10.111.101.1",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.133",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.148",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.22",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.142",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.134",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.250",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.145",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.109",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.144",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.131",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.137",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.23",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.25",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.132",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.121",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.115",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.116",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.129",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.127",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.105",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.111",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.120",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.119",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.110",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.102",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.130",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.21",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.24",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.113",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.112",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.125",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.117",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.26",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.28",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.27",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.126",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.122",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.128",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.123",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.118",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.31",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.32",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.104",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.114",
+          "value": 0,
+          "status": "critical"
+        },
+        {
+          "target": "10.114.4.106",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.108",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.124",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.107",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.146",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.147",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.135",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.138",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.101",
+          "value": 1,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.143",
+          "value": 1,
+          "status": "info"
+        }
+      ],
+      "fields": [
+        {
+          "label": "节点",
+          "name": "target"
+        },
+        {
+          "label": "存活状态",
+          "name": "value"
+        },
+        {
+          "label": "状态",
+          "name": "status"
+        }
+      ],
+      "status_mapping": {
+        "critical": "节点离线",
+        "info": "节点在线"
+      }
+    },
+    {
+      "indicator": "节点平均GPU算力利用率",
+      "type": "range",
+      "unit": "%",
+      "display_type": "table",
+      "summary": {
+        "total": 59,
+        "ok": 15,
+        "info": 28,
+        "warning": 16,
+        "critical": 0,
+        "missing": 0
+      },
+      "page": {
+        "size": 0,
+        "index": 1,
+        "has_more": false
+      },
+      "highlight": {
+        "enabled": true,
+        "values": [
+          {
+            "target": "10.111.101.22:9835",
+            "value": 163.578667534723,
+            "status": "warning"
+          },
+          {
+            "target": "10.114.4.115:9835",
+            "value": 93.59700520833333,
+            "status": "warning"
+          },
+          {
+            "target": "10.114.4.137:9835",
+            "value": 90.12805989583337,
+            "status": "warning"
+          },
+          {
+            "target": "10.114.4.126:9835",
+            "value": 89.98036024305557,
+            "status": "warning"
+          },
+          {
+            "target": "10.114.4.147:9835",
+            "value": 87.95308159722227,
+            "status": "warning"
+          }
+        ]
+      },
+      "values": [
+        {
+          "target": "10.111.101.103:9835",
+          "value": 7.292816840277781,
+          "status": "ok"
+        },
+        {
+          "target": "10.111.101.109:9835",
+          "value": 64.97725299531164,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.133:9835",
+          "value": 86.95646701388881,
+          "status": "warning"
+        },
+        {
+          "target": "10.111.101.134:9835",
+          "value": 83.86998697916675,
+          "status": "warning"
+        },
+        {
+          "target": "10.111.101.136:9835",
+          "value": 84.04806857638899,
+          "status": "warning"
+        },
+        {
+          "target": "10.111.101.139:9835",
+          "value": 86.88344184027777,
+          "status": "warning"
+        },
+        {
+          "target": "10.111.101.140:9835",
+          "value": 66.79888001389126,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.141:9835",
+          "value": 87.05726996527787,
+          "status": "warning"
+        },
+        {
+          "target": "10.111.101.142:9835",
+          "value": 83.97949218749997,
+          "status": "warning"
+        },
+        {
+          "target": "10.111.101.144:9835",
+          "value": 62.77087673611113,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.145:9835",
+          "value": 69.77899305555563,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.148:9835",
+          "value": 87.0100260416667,
+          "status": "warning"
+        },
+        {
+          "target": "10.114.4.101:9835",
+          "value": 28.51480034722226,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.102:9835",
+          "value": 56.11315104166669,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.104:9835",
+          "value": 71.20442301007995,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.105:9835",
+          "value": 74.37302517361111,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.106:9835",
+          "value": 69.07849392361113,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.107:9835",
+          "value": 72.45368923611113,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.108:9835",
+          "value": 58.2169270833333,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.110:9835",
+          "value": 62.30704115297792,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.111:9835",
+          "value": 74.87721354166659,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.112:9835",
+          "value": 83.8462890625,
+          "status": "warning"
+        },
+        {
+          "target": "10.114.4.113:9835",
+          "value": 83.05959201388887,
+          "status": "warning"
+        },
+        {
+          "target": "10.114.4.115:9835",
+          "value": 93.59700520833333,
+          "status": "warning"
+        },
+        {
+          "target": "10.114.4.116:9835",
+          "value": 58.555000868206264,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.117:9835",
+          "value": 72.45305989583328,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.118:9835",
+          "value": 25.620594618055577,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.119:9835",
+          "value": 77.30904947916675,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.120:9835",
+          "value": 0,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.121:9835",
+          "value": 76.18424479166673,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.122:9835",
+          "value": 74.55093315972223,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.123:9835",
+          "value": 79.25297309027776,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.124:9835",
+          "value": 76.0883029513889,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.125:9835",
+          "value": 81.73209635416674,
+          "status": "warning"
+        },
+        {
+          "target": "10.114.4.126:9835",
+          "value": 89.98036024305557,
+          "status": "warning"
+        },
+        {
+          "target": "10.114.4.127:9835",
+          "value": 74.6934363604792,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.128:9835",
+          "value": 75.80904947916676,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.129:9835",
+          "value": 50.83602430555554,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.130:9835",
+          "value": 76.51382378472233,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.131:9835",
+          "value": 80.98823784722218,
+          "status": "warning"
+        },
+        {
+          "target": "10.114.4.132:9835",
+          "value": 61.877745940783235,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.135:9835",
+          "value": 75.18511284722223,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.137:9835",
+          "value": 90.12805989583337,
+          "status": "warning"
+        },
+        {
+          "target": "10.114.4.138:9835",
+          "value": 70.29450954861115,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.143:9835",
+          "value": 75.13402777777785,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.146:9835",
+          "value": 75.23793402777773,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.147:9835",
+          "value": 87.95308159722227,
+          "status": "warning"
+        },
+        {
+          "target": "10.111.101.223:9835",
+          "value": 0.1839843750000005,
+          "status": "ok"
+        },
+        {
+          "target": "10.111.101.224:9835",
+          "value": 0.2939236111111111,
+          "status": "ok"
+        },
+        {
+          "target": "10.111.101.22:9835",
+          "value": 163.578667534723,
+          "status": "warning"
+        },
+        {
+          "target": "10.114.4.21:9835",
+          "value": 0.0009982638888888825,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.23:9835",
+          "value": 0.3152994791666666,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.24:9835",
+          "value": 0.12510850694444708,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.25:9835",
+          "value": 0.10119357638888989,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.26:9835",
+          "value": 5.196896701388891,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.27:9835",
+          "value": 0.18361545138888877,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.28:9835",
+          "value": 0.45913628472221396,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.31:9835",
+          "value": 1.7465711805555575,
+          "status": "ok"
+        },
+        {
+          "target": "10.114.4.32:9835",
+          "value": 0.44455295138888934,
+          "status": "ok"
+        }
+      ],
+      "fields": [
+        {
+          "label": "节点",
+          "name": "target"
+        },
+        {
+          "label": "平均算力利用率",
+          "name": "value"
+        },
+        {
+          "label": "负载状态",
+          "name": "status"
+        }
+      ],
+      "status_mapping": {
+        "info": "平均利用率50%-80%（负载适中）",
+        "warning": "平均利用率\u003e80%（负载较高）"
+      }
+    },
+    {
+      "indicator": "节点内最高GPU温度",
+      "type": "range",
+      "unit": "°C",
+      "display_type": "table",
+      "summary": {
+        "total": 59,
+        "ok": 0,
+        "info": 59,
+        "warning": 0,
+        "critical": 0,
+        "missing": 0
+      },
+      "page": {
+        "size": 0,
+        "index": 1,
+        "has_more": false
+      },
+      "highlight": {
+        "enabled": true,
+        "values": [
+          {
+            "target": "10.114.4.116:9835",
+            "value": 72,
+            "status": "info"
+          },
+          {
+            "target": "10.114.4.26:9835",
+            "value": 72,
+            "status": "info"
+          }
+        ]
+      },
+      "values": [
+        {
+          "target": "10.111.101.103:9835",
+          "value": 56,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.109:9835",
+          "value": 66,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.133:9835",
+          "value": 66,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.134:9835",
+          "value": 66,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.136:9835",
+          "value": 67,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.139:9835",
+          "value": 67,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.140:9835",
+          "value": 61,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.141:9835",
+          "value": 67,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.142:9835",
+          "value": 69,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.144:9835",
+          "value": 64,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.145:9835",
+          "value": 62,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.148:9835",
+          "value": 65,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.101:9835",
+          "value": 68,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.102:9835",
+          "value": 66,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.104:9835",
+          "value": 61,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.105:9835",
+          "value": 65,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.106:9835",
+          "value": 65,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.107:9835",
+          "value": 44,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.108:9835",
+          "value": 64,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.110:9835",
+          "value": 64,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.111:9835",
+          "value": 65,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.112:9835",
+          "value": 67,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.113:9835",
+          "value": 43,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.115:9835",
+          "value": 69,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.116:9835",
+          "value": 72,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.117:9835",
+          "value": 45,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.118:9835",
+          "value": 43,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.119:9835",
+          "value": 44,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.120:9835",
+          "value": 29,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.121:9835",
+          "value": 46,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.122:9835",
+          "value": 45,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.123:9835",
+          "value": 62,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.124:9835",
+          "value": 66,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.125:9835",
+          "value": 61,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.126:9835",
+          "value": 63,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.127:9835",
+          "value": 49,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.128:9835",
+          "value": 49,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.129:9835",
+          "value": 64,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.130:9835",
+          "value": 43,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.131:9835",
+          "value": 45,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.132:9835",
+          "value": 62,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.135:9835",
+          "value": 55,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.137:9835",
+          "value": 64,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.138:9835",
+          "value": 62,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.143:9835",
+          "value": 53,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.146:9835",
+          "value": 64,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.147:9835",
+          "value": 64,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.223:9835",
+          "value": 66,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.224:9835",
+          "value": 61,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.22:9835",
+          "value": 50,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.21:9835",
+          "value": 36,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.23:9835",
+          "value": 52,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.24:9835",
+          "value": 49,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.25:9835",
+          "value": 61,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.26:9835",
+          "value": 72,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.27:9835",
+          "value": 43,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.28:9835",
+          "value": 64,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.31:9835",
+          "value": 59,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.32:9835",
+          "value": 39,
+          "status": "info"
+        }
+      ],
+      "fields": [
+        {
+          "label": "节点",
+          "name": "target"
+        },
+        {
+          "label": "最高GPU温度",
+          "name": "value"
+        },
+        {
+          "label": "散热状态",
+          "name": "status"
+        }
+      ],
+      "status_mapping": {
+        "critical": "最高温度\u003e90°（可能触发降频）",
+        "info": "最高温度≤85°（正常）",
+        "warning": "最高温度85-90°（散热压力大）"
+      }
+    },
+    {
+      "indicator": "节点平均GPU温度",
+      "type": "range",
+      "unit": "°C",
+      "display_type": "table",
+      "summary": {
+        "total": 59,
+        "ok": 0,
+        "info": 59,
+        "warning": 0,
+        "critical": 0,
+        "missing": 0
+      },
+      "page": {
+        "size": 0,
+        "index": 1,
+        "has_more": false
+      },
+      "highlight": {
+        "enabled": true,
+        "values": [
+          {
+            "target": "10.114.4.115:9835",
+            "value": 64,
+            "status": "info"
+          },
+          {
+            "target": "10.111.101.142:9835",
+            "value": 63.625,
+            "status": "info"
+          },
+          {
+            "target": "10.114.4.116:9835",
+            "value": 63,
+            "status": "info"
+          }
+        ]
+      },
+      "values": [
+        {
+          "target": "10.111.101.103:9835",
+          "value": 34.49999999999999,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.109:9835",
+          "value": 61,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.133:9835",
+          "value": 60.875,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.134:9835",
+          "value": 61.125,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.136:9835",
+          "value": 62.125,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.139:9835",
+          "value": 62.375,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.140:9835",
+          "value": 56.75,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.141:9835",
+          "value": 62.125,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.142:9835",
+          "value": 63.625,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.144:9835",
+          "value": 60,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.145:9835",
+          "value": 57.875,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.148:9835",
+          "value": 60.99999999999999,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.101:9835",
+          "value": 62.625,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.102:9835",
+          "value": 60.625,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.104:9835",
+          "value": 56.5,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.105:9835",
+          "value": 60.625,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.106:9835",
+          "value": 61,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.107:9835",
+          "value": 41.125,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.108:9835",
+          "value": 60.5,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.110:9835",
+          "value": 58.75,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.111:9835",
+          "value": 60.75,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.112:9835",
+          "value": 62.24999999999999,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.113:9835",
+          "value": 39.625,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.115:9835",
+          "value": 64,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.116:9835",
+          "value": 63,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.117:9835",
+          "value": 40.875,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.118:9835",
+          "value": 39.375,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.119:9835",
+          "value": 39.75,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.120:9835",
+          "value": 27.5,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.121:9835",
+          "value": 42.625,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.122:9835",
+          "value": 42.375,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.123:9835",
+          "value": 58.25,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.124:9835",
+          "value": 60.375,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.125:9835",
+          "value": 56.375,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.126:9835",
+          "value": 58.62500000000001,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.127:9835",
+          "value": 44.74999999999999,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.128:9835",
+          "value": 42.125,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.129:9835",
+          "value": 59.875,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.130:9835",
+          "value": 38.625,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.131:9835",
+          "value": 40.62499999999999,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.132:9835",
+          "value": 57.75,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.135:9835",
+          "value": 46,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.137:9835",
+          "value": 59.99999999999999,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.138:9835",
+          "value": 57.5,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.143:9835",
+          "value": 49.125,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.146:9835",
+          "value": 60.5,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.147:9835",
+          "value": 58.375,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.223:9835",
+          "value": 35.375,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.224:9835",
+          "value": 30.625,
+          "status": "info"
+        },
+        {
+          "target": "10.111.101.22:9835",
+          "value": 38.625,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.21:9835",
+          "value": 28.874999999999996,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.23:9835",
+          "value": 34.25,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.24:9835",
+          "value": 34.87500000000001,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.25:9835",
+          "value": 33.25,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.26:9835",
+          "value": 38.875,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.27:9835",
+          "value": 31.5,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.28:9835",
+          "value": 32.5,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.31:9835",
+          "value": 32.125,
+          "status": "info"
+        },
+        {
+          "target": "10.114.4.32:9835",
+          "value": 29.125,
+          "status": "info"
+        }
+      ],
+      "fields": [
+        {
+          "label": "节点",
+          "name": "target"
+        },
+        {
+          "label": "平均GPU温度",
+          "name": "value"
+        },
+        {
+          "label": "散热状态",
+          "name": "status"
+        }
+      ],
+      "status_mapping": {
+        "critical": "平均温度\u003e90°（可能触发降频）",
+        "info": "平均温度≤85°（正常）",
+        "warning": "平均温度85-90°（散热压力大）"
+      }
+    }
+  ]
+}
+

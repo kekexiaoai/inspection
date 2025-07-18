@@ -1,12 +1,10 @@
-// Package inspection parses YAML-based巡检模板 and renders queries with
-// fully-typed variable substitution, including two-phase resolution so that
-// variables may reference other variables without relying on YAML order.
 package inspection
 
 import (
 	"bytes"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,7 +15,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// 包级常量：定义阈值级别及其优先级（数值越小，优先级越高）
 const (
 	ThresholdLevelCritical = "critical"
 	ThresholdLevelWarning  = "warning"
@@ -25,17 +22,12 @@ const (
 	ThresholdLevelOk       = "ok" // default
 )
 
-// 包级变量：阈值级别优先级映射（外部可访问）
 var ThresholdLevelPriorities = map[string]int{
 	ThresholdLevelCritical: 1,
 	ThresholdLevelWarning:  2,
 	ThresholdLevelInfo:     3,
 	ThresholdLevelOk:       4,
 }
-
-// -----------------------------------------------------------------------------
-// Data Model (matches YAML spec)
-// -----------------------------------------------------------------------------
 
 type Template struct {
 	TemplateName   string         `yaml:"template_name" validate:"required"`
@@ -77,7 +69,7 @@ type Indicator struct {
 	Name        string       `yaml:"name" validate:"required"`
 	Description string       `yaml:"description"`
 	Source      string       `yaml:"source" validate:"required,oneof=prometheus elasticsearch metadata"`
-	Type        string       `yaml:"type"   validate:"required,oneof=point trend alert_list"`
+	Type        string       `yaml:"type"   validate:"required,oneof=point range trend alert_list"`
 	Query       any          `yaml:"query" validate:"required"`
 	TimeRange   string       `yaml:"time_range"`
 	Resolution  string       `yaml:"resolution"`
@@ -86,14 +78,6 @@ type Indicator struct {
 	Display     Display      `yaml:"display" validate:"required"`
 	Vars        []Variable   `yaml:"vars" validate:"dive"`
 }
-
-// -----------------------------------------------------------------------------
-// 阈值处理相关方法（集成到 Indicator 中）
-// -----------------------------------------------------------------------------
-
-// -----------------------------------------------------------------------------
-// 示例：外部调用方式
-// -----------------------------------------------------------------------------
 
 /*
 // 外部代码可以这样使用：
@@ -112,11 +96,10 @@ func ExampleIndicator_DetermineStatus() {
 
 // DetermineStatus 根据指标的阈值配置判断数值对应的状态
 // 外部可直接调用：indicator.DetermineStatus(value)
-// DetermineStatus 根据指标的阈值配置判断数值对应的状态
 func (ind *Indicator) DetermineStatus(value float64) string {
 	// 按配置顺序遍历阈值（假设用户已按优先级排序）
 	for _, th := range ind.Thresholds {
-		if meetsCondition(value, th.Operator, th.Value) {
+		if meetsCondition(value, th.Operator, *th.Value) {
 			return th.Level
 		}
 	}
@@ -142,9 +125,10 @@ func meetsCondition(value float64, op string, threshold float64) bool {
 }
 
 type Threshold struct {
-	Level    string  `yaml:"level" validate:"required,oneof=critical warning info"` // 状态级别
-	Value    float64 `yaml:"value" validate:"required"`                             // 阈值数值
-	Operator string  `yaml:"operator" validate:"required,oneof=gt gte lt lte eq"`   // 运算符
+	Level       string   `yaml:"level" validate:"required,oneof=critical warning info"` // 状态级别
+	Value       *float64 `yaml:"value" validate:"required"`                             // 阈值数值
+	Operator    string   `yaml:"operator" validate:"required,oneof=gt gte lt lte eq"`   // 运算符
+	Description string   `yaml:"description" validate:"required"`                       // 状态描述
 }
 
 type Variable struct {
@@ -165,15 +149,79 @@ type Display struct {
 	SummaryMode      string           `yaml:"summary_mode" validate:"omitempty,oneof=count_by_status total_count"`
 	PageSize         int              `yaml:"page_size" validate:"omitempty,min=1"`
 	Fields           []map[string]any `yaml:"fields"`
+	Highlight        HighlightConfig  `yaml:"highlight"`
 }
 
+type HighlightConfig struct {
+	Enabled    bool        `yaml:"enabled"`
+	Limit      string      `yaml:"limit"` // 取值："all", "top_n", "bottom_n"
+	Logic      string      `yaml:"logic" validate:"omitempty,oneof=and or" default:"or"`
+	Conditions []Condition `yaml:"conditions"` // 支持多个条件
+}
+
+// 预编译 Limit 格式验证正则表达式
+var validLimitPattern = regexp.MustCompile(`^(all|top_\d+|bottom_\d+)$`)
+
+// Validate 验证 HighlightConfig 结构
+func (h *HighlightConfig) Validate() error {
+	// 若未启用，无需验证其他字段
+	if !h.Enabled {
+		return nil
+	}
+
+	// 验证 Limit 格式
+	if h.Limit != "" && !validLimitPattern.MatchString(h.Limit) {
+		return fmt.Errorf("invalid highlight limit format: %s", h.Limit)
+	}
+
+	// 验证 Conditions
+	if len(h.Conditions) == 0 {
+		return fmt.Errorf("highlight is enabled but no conditions specified")
+	}
+
+	for i, cond := range h.Conditions {
+		// 验证 Level
+		if cond.Level != "" {
+			if _, ok := ThresholdLevelPriorities[cond.Level]; !ok {
+				return fmt.Errorf("invalid level in condition %d: %s", i, cond.Level)
+			}
+		}
+
+		// 验证 Operator
+		if cond.Operator != "" {
+			valid := false
+			for _, op := range []string{"gt", "gte", "lt", "lte", "eq"} {
+				if cond.Operator == op {
+					valid = true
+					break
+				}
+			}
+			if !valid {
+				return fmt.Errorf("invalid operator in condition %d: %s", i, cond.Operator)
+			}
+		}
+
+		// 验证 value 和 Operator 必须同时存在或同时不存在
+		if (cond.Value != nil) != (cond.Operator != "") {
+			return fmt.Errorf("value and operator must be specified together in condition %d", i)
+		}
+	}
+
+	return nil
+}
+
+type Condition struct {
+	Level    string   `yaml:"level"`    // 支持 critical/warning/info/ok
+	Value    *float64 `yaml:"value"`    // 可选：数值阈值
+	Operator string   `yaml:"operator"` // 可选：gt/gte/lt/lte/eq
+}
 type ReportLayout struct {
-	Sections []Section `yaml:"sections" validate:"required,min=1,dive"`
+	Sections []*Section `yaml:"sections" json:"sections" validate:"required,min=1,dive"`
 }
 
 type Section struct {
-	Title   string   `yaml:"title" validate:"required"`
-	Include []string `yaml:"include" validate:"required,min=1,dive,required"`
+	Title      string   `yaml:"title" json:"title" validate:"required"`
+	Indicators []string `yaml:"Indicators" json:"indicators" validate:"required,min=1,dive,required"`
 }
 
 // -----------------------------------------------------------------------------
@@ -207,6 +255,14 @@ func ParseTemplateBytes(data []byte) (*Template, error) {
 	if err := yaml.Unmarshal(data, &tpl); err != nil {
 		return nil, fmt.Errorf("yaml unmarshal: %w", err)
 	}
+
+	// 补全 HighlightConfig.Logic 的默认值
+	for _, ind := range tpl.Indicators {
+		if ind.Display.Highlight.Logic == "" {
+			ind.Display.Highlight.Logic = "or" // 默认 or 逻辑
+		}
+	}
+
 	if err := validate.Struct(tpl); err != nil {
 		return nil, fmt.Errorf("template validation: %w", err)
 	}
@@ -215,10 +271,13 @@ func ParseTemplateBytes(data []byte) (*Template, error) {
 	// 后续可以考虑在解析后自动排序
 	// 自动排序阈值
 	// tpl.SortIndicatorThresholds()
-	// 验证每个指标的阈值顺序
+	// 验证每个指标的阈值顺序和高亮配置
 	for _, ind := range tpl.Indicators {
 		if err := validateThresholdOrder(ind); err != nil {
 			return nil, fmt.Errorf("indicator %s: %w", ind.Name, err)
+		}
+		if err := ind.Display.Highlight.Validate(); err != nil {
+			return nil, fmt.Errorf("indicator %s highlight invalid: %w", ind.Name, err)
 		}
 	}
 
@@ -261,7 +320,7 @@ func validateVarType(v Variable, val string) error {
 			}
 		}
 		if !allowed {
-			return fmt.Errorf("variable %s must be one of %v", v.Name, v.EnumValues)
+			return fmt.Errorf("variable %s must be one of %v, got %s", v.Name, v.EnumValues, val)
 		}
 	}
 	return nil

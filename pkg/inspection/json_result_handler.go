@@ -1,9 +1,10 @@
 package inspection
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/prometheus/common/model"
 
@@ -36,15 +37,13 @@ func NewJSONResultHandler(indicator *Indicator) (*JSONResultHandler, prom.Result
 				Size:  indicator.Display.PageSize, // 分页大小（从指标配置中获取）
 				Index: 1,                          // 默认第一页
 			},
-			Highlight: HighlightInfo{
-				TopN: 5, // 默认提取前5个异常项作为高亮
-			},
 			Values: []ValueItem{}, // 存储具体数据项
 
 			Fields: indicator.Display.Fields, // 显示字段配置
 		},
 		samples: []*model.Sample{}, // 临时存储所有 *model.Sample 类型的样本（即时查询结果）
 	}
+	handler.result.StatusMapping = make(map[string]string)
 
 	// 定义实际传给 prom 包的处理器函数（闭包，共享 handler 内部状态）
 	resultHandler := func(data any) error {
@@ -74,7 +73,7 @@ func NewJSONResultHandler(indicator *Indicator) (*JSONResultHandler, prom.Result
 }
 
 // Finalize 处理完所有样本后，调用此方法生成最终 JSON（需在查询结束后手动调用）
-func (h *JSONResultHandler) Finalize() ([]byte, error) {
+func (h *JSONResultHandler) Finalize() (*IndicatorResult, error) {
 	// 处理所有累积的 *model.Sample 样本
 	h.processSamples()
 
@@ -85,10 +84,20 @@ func (h *JSONResultHandler) Finalize() ([]byte, error) {
 	h.sortAndExtractHighlights()
 
 	// 应用分页
-	h.applyPagination()
+	// h.applyPagination()
 
-	// 转换为 JSON
-	return json.MarshalIndent(h.result, "", "  ")
+	// // 转换为 JSON
+	// indent, err := json.MarshalIndent(h.result, "", "  ")
+	// fmt.Println(string(indent))
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to marshal indicator result: %v", err)
+	// }
+
+	for _, threshold := range h.indicator.Thresholds {
+		h.result.StatusMapping[threshold.Level] = threshold.Description
+	}
+
+	return h.result, nil
 }
 
 // 处理 *model.Sample 样本集合（复用 addValueItem 统一逻辑）
@@ -197,28 +206,10 @@ func (h *JSONResultHandler) handleMissingValues() {
 	// 处理缺失值逻辑（根据业务需求补充）
 }
 
-func (h *JSONResultHandler) sortAndExtractHighlights() {
-	// 按值降序排序
-	sort.Slice(h.result.Values, func(i, j int) bool {
-		if h.result.Values[i].Value == nil || h.result.Values[j].Value == nil {
-			return false
-		}
-		return *h.result.Values[i].Value > *h.result.Values[j].Value
-	})
-
-	// 提取前 N 个高亮项
-	topN := h.result.Highlight.TopN
-	if len(h.result.Values) < topN {
-		topN = len(h.result.Values)
-	}
-	h.result.Highlight.Values = make([]ValueItem, topN)
-	copy(h.result.Highlight.Values, h.result.Values[:topN])
-}
-
 func (h *JSONResultHandler) applyPagination() {
 	pageSize := h.result.Page.Size
 	if pageSize <= 0 {
-		pageSize = 20
+		pageSize = 10
 		h.result.Page.Size = pageSize
 	}
 
@@ -236,4 +227,125 @@ func (h *JSONResultHandler) applyPagination() {
 		end = total
 	}
 	h.result.Values = h.result.Values[start:end]
+}
+
+// 提取高亮项，支持多种条件和限制
+func (h *JSONResultHandler) sortAndExtractHighlights() {
+	config := h.indicator.Display.Highlight
+	h.result.Highlight.Enabled = config.Enabled // 严格同步 enabled 状态
+
+	if !config.Enabled {
+		h.result.Highlight.Values = []ValueItem{}
+		return
+	}
+
+	// 1. 按逻辑过滤符合条件的项（支持 and/or）
+	logic := config.Logic
+	if logic == "" {
+		logic = "or" // 兜底默认 or（与 ParseTemplateBytes 保持一致）
+	}
+	filtered := h.filterByConditions(config.Conditions, logic)
+
+	// 2. 解析 limit 并排序
+	limit := h.parseHighlightLimit(config.Limit)
+	if limit > 0 && len(filtered) > limit {
+		// 根据 limit 类型排序（top 降序，bottom 升序）
+		if strings.HasPrefix(config.Limit, "top") {
+			sort.Slice(filtered, func(i, j int) bool {
+				return *filtered[i].Value > *filtered[j].Value
+			})
+		} else if strings.HasPrefix(config.Limit, "bottom") {
+			sort.Slice(filtered, func(i, j int) bool {
+				return *filtered[i].Value < *filtered[j].Value
+			})
+		}
+		filtered = filtered[:limit] // 截取前 N 项
+	}
+
+	// 3. 赋值最终高亮结果
+	h.result.Highlight.Values = filtered
+}
+
+// 按条件和逻辑关系过滤项（核心优化）
+func (h *JSONResultHandler) filterByConditions(conditions []Condition, logic string) []ValueItem {
+	var result []ValueItem
+	for _, item := range h.result.Values {
+		if item.Missing || item.Value == nil {
+			continue // 跳过缺失值或无值项
+		}
+
+		// 根据 logic 判断满足任一条件（or）还是所有条件（and）
+		matches := false
+		if logic == "and" {
+			matches = h.matchesAllConditions(item, conditions)
+		} else { // 默认 or
+			matches = h.matchesAnyCondition(item, conditions)
+		}
+
+		if matches {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// 满足所有条件（and 逻辑）
+func (h *JSONResultHandler) matchesAllConditions(item ValueItem, conditions []Condition) bool {
+	for _, cond := range conditions {
+		if !h.matchesSingleCondition(item, cond) {
+			return false
+		}
+	}
+	return true
+}
+
+// 满足任一条件（or 逻辑）
+func (h *JSONResultHandler) matchesAnyCondition(item ValueItem, conditions []Condition) bool {
+	for _, cond := range conditions {
+		if h.matchesSingleCondition(item, cond) {
+			return true
+		}
+	}
+	return false
+}
+
+// 满足单个条件（复用已有的 meetsCondition 函数）
+func (h *JSONResultHandler) matchesSingleCondition(item ValueItem, cond Condition) bool {
+	// 检查状态级别条件（如 level: critical）
+	if cond.Level != "" && item.Status != cond.Level {
+		return false
+	}
+	// 检查数值阈值条件（如 value: 90, operator: gt）
+	if cond.Operator != "" {
+		if !meetsCondition(*item.Value, cond.Operator, *cond.Value) {
+			return false
+		}
+	}
+	return true
+}
+
+// 解析高亮 limit 配置
+func (h *JSONResultHandler) parseHighlightLimit(limitStr string) int {
+	if limitStr == "" || limitStr == "all" {
+		return -1 // 不限制数量
+	}
+
+	// 解析 top_N（如 top_5）
+	if strings.HasPrefix(limitStr, "top_") {
+		n, err := strconv.Atoi(limitStr[4:])
+		if err == nil && n > 0 {
+			return n
+		}
+	}
+
+	// 解析 bottom_N（如 bottom_3）
+	if strings.HasPrefix(limitStr, "bottom_") {
+		n, err := strconv.Atoi(limitStr[7:])
+		if err == nil && n > 0 {
+			return n
+		}
+	}
+
+	// 格式错误时返回 -1（不限制，避免错误截取）
+	return -1
 }

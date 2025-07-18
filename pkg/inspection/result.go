@@ -1,15 +1,39 @@
 package inspection
 
+import "time"
+
+type Report struct {
+	Template struct {
+		Name       string    `json:"name"`
+		ExecutedAt time.Time `json:"executed_at"`
+		ExecutedBy string    `json:"executed_by"`
+	} `json:"template"`
+	SummaryOverviews []*SummaryOverview `json:"summary_overviews"`
+	Sections         []*Section         `json:"sections"`
+	Results          []*IndicatorResult `json:"results"`
+}
+
+type SummaryOverview struct {
+	Indicator string `json:"indicator"`
+	Unit      string `json:"unit"`
+	Total     int    `json:"total"`
+	Ok        int    `json:"ok"`
+	Warning   int    `json:"warning"`
+	Critical  int    `json:"critical"`
+	Missing   int    `json:"missing"`
+}
+
 type IndicatorResult struct {
-	Indicator   string           `json:"indicator"`
-	Type        string           `json:"type"`
-	Unit        string           `json:"unit"`
-	DisplayType string           `json:"display_type"`
-	Summary     Summary          `json:"summary"`
-	Page        PageInfo         `json:"page"`
-	Highlight   HighlightInfo    `json:"highlight"`
-	Values      []ValueItem      `json:"values"`
-	Fields      []map[string]any `json:"fields,omitempty"`
+	Indicator     string            `json:"indicator"`
+	Type          string            `json:"type"`
+	Unit          string            `json:"unit"`
+	DisplayType   string            `json:"display_type"`
+	Summary       Summary           `json:"summary"`
+	Page          PageInfo          `json:"page"`
+	Highlight     HighlightInfo     `json:"highlight"`
+	Values        []ValueItem       `json:"values"`
+	Fields        []map[string]any  `json:"fields,omitempty"`
+	StatusMapping map[string]string `json:"status_mapping,omitempty"`
 }
 
 type Summary struct {
@@ -28,8 +52,8 @@ type PageInfo struct {
 }
 
 type HighlightInfo struct {
-	TopN   int         `json:"top_n"`
-	Values []ValueItem `json:"values"`
+	Enabled bool        `json:"enabled"`
+	Values  []ValueItem `json:"values"`
 }
 
 type ValueItem struct {

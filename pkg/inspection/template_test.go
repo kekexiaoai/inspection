@@ -1,6 +1,7 @@
 package inspection
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -15,7 +16,8 @@ var globalClient *prom.Client
 
 func TestMain(m *testing.M) {
 	var err error
-	globalClient, err = prom.NewClient("http://10.120.1.6:9090", prom.WithTimeout(10*time.Second))
+	// globalClient, err = prom.NewClient("http://10.120.1.6:9090", prom.WithTimeout(10*time.Second))
+	globalClient, err = prom.NewClient("http://10.111.201.1:9090", prom.WithTimeout(10*time.Second))
 	if err != nil {
 		fmt.Printf("Error creating global client: %v\n", err)
 		os.Exit(1)
@@ -247,13 +249,13 @@ func TestRenderGPUUsageWithJSON_result(t *testing.T) {
 	}
 
 	// 生成最终 JSON：通过 jsonHandler 结构体指针调用 Finalize()
-	resultJSON, err := jsonHandler.Finalize()
+	result, err := jsonHandler.Finalize()
 	if err != nil {
 		t.Fatalf("Finalize failed: %v", err)
 	}
 
 	// 输出结果
-	fmt.Println("Final JSON:\n", string(resultJSON))
+	fmt.Println("Final JSON:\n", result)
 }
 
 func TestRenderGPUUsageWithJSON_result_2(t *testing.T) {
@@ -281,11 +283,67 @@ func TestRenderGPUUsageWithJSON_result_2(t *testing.T) {
 	}
 
 	// 生成最终 JSON：通过 jsonHandler 结构体指针调用 Finalize()
-	resultJSON, err := jsonHandler.Finalize()
+	result, err := jsonHandler.Finalize()
 	if err != nil {
 		t.Fatalf("Finalize failed: %v", err)
 	}
 
 	// 输出结果
-	fmt.Println("Final JSON:\n", string(resultJSON))
+	fmt.Println("Final JSON:\n", result)
+}
+
+func TestRenderTemplate(t *testing.T) {
+	tpl, err := ParseTemplateFile("template/gpu/gpu-node.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	result := &Report{}
+	result.Template.Name = tpl.TemplateName
+	result.Template.ExecutedAt = now
+	result.Template.ExecutedBy = "admin"
+	result.Sections = tpl.ReportLayout.Sections
+
+	for _, ind := range tpl.Indicators {
+		query, err := tpl.RenderQueryWithVars(ind, map[string]string{
+			// "ClusterRegex": `10\\.120\\.[0-9]+\\.[0-9]+`,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// fmt.Println("Rendered Query:\n", query)
+
+		// 创建处理器：同时获取结构体指针和处理器函数
+		jsonHandler, resultHandler := NewJSONResultHandler(ind)
+		if err := prom.ExecuteQuery(globalClient, query, now, resultHandler); err != nil {
+			t.Fatalf("Query failed: %v", err)
+		}
+		indResult, err := jsonHandler.Finalize()
+		if err != nil {
+			t.Fatalf("Finalize failed: %v", err)
+		}
+		result.Results = append(result.Results, indResult)
+
+		//
+		so := &SummaryOverview{
+			Indicator: ind.Name,
+			Unit:      indResult.Unit,
+			Total:     indResult.Summary.Total,
+			Ok:        indResult.Summary.Ok,
+			Warning:   indResult.Summary.Warning,
+			Critical:  indResult.Summary.Critical,
+			Missing:   indResult.Summary.Missing,
+		}
+		result.SummaryOverviews = append(result.SummaryOverviews, so)
+
+		// marshal, err := json.MarshalIndent(indResult, "", "  ")
+
+		// fmt.Printf("Final JSON: %#v\n%s\n%v\n", indResult, marshal, err)
+	}
+
+	marshal, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("result: \n", string(marshal))
 }
