@@ -11,20 +11,30 @@ import (
 
 // Client represents a Prometheus query client.
 type Client struct {
-	api    v1.API
-	ctx    context.Context
-	cancel context.CancelFunc
+	api          v1.API
+	ctx          context.Context
+	cancel       context.CancelFunc
+	queryTimeout time.Duration // 查询超时时间
 }
 
 // Option configures the Client.
 type Option func(*Client)
 
-// WithTimeout sets the context timeout for queries.
-func WithTimeout(d time.Duration) Option {
+// WithTimeout sets the default timeout for queries.
+func WithTimeout(timeout time.Duration) Option {
 	return func(c *Client) {
-		c.ctx, c.cancel = context.WithTimeout(context.Background(), d)
+		c.queryTimeout = timeout
 	}
 }
+
+// WithContext sets a base context for the client (e.g., for authentication).
+func WithContext(ctx context.Context) Option {
+	return func(c *Client) {
+		c.ctx, c.cancel = context.WithCancel(ctx)
+	}
+}
+
+const defaultTimeout = 30 * time.Second
 
 // NewClient creates a new Prometheus query client.
 func NewClient(addr string, opts ...Option) (*Client, error) {
@@ -36,9 +46,10 @@ func NewClient(addr string, opts ...Option) (*Client, error) {
 	}
 
 	c := &Client{
-		api:    v1.NewAPI(client),
-		ctx:    context.Background(),
-		cancel: func() {},
+		api:          v1.NewAPI(client),
+		ctx:          context.Background(),
+		cancel:       func() {},      // 默认空函数，避免nil调用
+		queryTimeout: defaultTimeout, // 默认30秒超时
 	}
 
 	// Apply options
@@ -49,29 +60,62 @@ func NewClient(addr string, opts ...Option) (*Client, error) {
 	return c, nil
 }
 
-// Query performs an instant query and returns the result.
+// WithTimeout creates a new Client instance with a specific timeout,
+// inheriting all other configuration from the original client.
+func (c *Client) WithTimeout(timeout time.Duration) *Client {
+	return &Client{
+		api:          c.api,
+		ctx:          c.ctx,
+		cancel:       c.cancel,
+		queryTimeout: timeout,
+	}
+}
+
+// WithContext creates a new Client instance with a specific context,
+// inheriting all other configuration from the original client.
+func (c *Client) WithContext(ctx context.Context) *Client {
+	ctx, cancel := context.WithCancel(ctx)
+	return &Client{
+		api:          c.api,
+		ctx:          ctx,
+		cancel:       cancel,
+		queryTimeout: c.queryTimeout,
+	}
+}
+
+// Query performs an instant query using the configured timeout and returns the result.
 func (c *Client) Query(query string, ts time.Time) (model.Value, v1.Warnings, error) {
-	return c.api.Query(c.ctx, query, ts)
+	ctx, cancel := context.WithTimeout(c.ctx, c.queryTimeout)
+	defer cancel()
+	return c.api.Query(ctx, query, ts)
 }
 
-// QueryRange performs a range query and returns the result.
+// QueryRange performs a range query using the configured timeout and returns the result.
 func (c *Client) QueryRange(query string, r v1.Range) (model.Value, v1.Warnings, error) {
-	return c.api.QueryRange(c.ctx, query, r)
+	ctx, cancel := context.WithTimeout(c.ctx, c.queryTimeout)
+	defer cancel()
+	return c.api.QueryRange(ctx, query, r)
 }
 
-// Alerts retrieves the current alert overview.
+// Alerts retrieves the current alert overview using the configured timeout.
 func (c *Client) Alerts() (v1.AlertsResult, error) {
-	return c.api.Alerts(c.ctx)
+	ctx, cancel := context.WithTimeout(c.ctx, c.queryTimeout)
+	defer cancel()
+	return c.api.Alerts(ctx)
 }
 
-// AlertManagers retrieves the list of alert managers.
+// AlertManagers retrieves the list of alert managers using the configured timeout.
 func (c *Client) AlertManagers() (v1.AlertManagersResult, error) {
-	return c.api.AlertManagers(c.ctx)
+	ctx, cancel := context.WithTimeout(c.ctx, c.queryTimeout)
+	defer cancel()
+	return c.api.AlertManagers(ctx)
 }
 
-// CleanTombstones cleans up tombstones from the TSDB.
+// CleanTombstones cleans up tombstones from the TSDB using the configured timeout.
 func (c *Client) CleanTombstones() error {
-	return c.api.CleanTombstones(c.ctx)
+	ctx, cancel := context.WithTimeout(c.ctx, c.queryTimeout)
+	defer cancel()
+	return c.api.CleanTombstones(ctx)
 }
 
 // Close cancels the context to release resources.
