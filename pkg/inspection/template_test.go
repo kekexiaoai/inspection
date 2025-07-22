@@ -299,7 +299,8 @@ func TestRenderTemplate(t *testing.T) {
 	}
 	now := time.Now()
 	result := &Report{}
-	result.Template.Name = tpl.TemplateName
+	result.Template.Name = tpl.Name
+	result.Template.DisplayName = tpl.DisplayName
 	result.Template.ExecutedAt = now
 	result.Template.ExecutedBy = "admin"
 	result.Sections = tpl.ReportLayout.Sections

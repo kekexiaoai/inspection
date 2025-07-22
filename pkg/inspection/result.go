@@ -4,9 +4,10 @@ import "time"
 
 type Report struct {
 	Template struct {
-		Name       string    `json:"name"`
-		ExecutedAt time.Time `json:"executed_at"`
-		ExecutedBy string    `json:"executed_by"`
+		Name        string    `json:"name"`
+		DisplayName string    `json:"display_name"`
+		ExecutedAt  time.Time `json:"executed_at"`
+		ExecutedBy  string    `json:"executed_by"`
 	} `json:"template"`
 	SummaryOverviews []*SummaryOverview `json:"summary_overviews"`
 	Sections         []*Section         `json:"sections"`
@@ -26,6 +27,7 @@ type SummaryOverview struct {
 type IndicatorResult struct {
 	Indicator     string            `json:"indicator"`
 	Type          string            `json:"type"`
+	Description   string            `json:"description"`
 	Unit          string            `json:"unit"`
 	DisplayType   string            `json:"display_type"`
 	Summary       Summary           `json:"summary"`

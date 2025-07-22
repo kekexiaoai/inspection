@@ -1,9 +1,9 @@
 ###############################################################################
 # GPU 节点每日巡检模板（节点级聚合监控）
 ###############################################################################
-template_name: daily-gpu-node-inspection
-display_name: GPU节点每日巡检（聚合视角）
-description: 每日检查GPU节点的整体健康状态、资源负载与关键依赖（网络/存储）
+name: daily-gpu-node-inspection
+display_name: GPU节点每日巡检
+description: 每日检查GPU节点（聚合视角）的整体健康状态、资源负载与关键依赖（网络/存储）
 version: v2
 created_by: system
 

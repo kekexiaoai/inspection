@@ -30,6 +30,7 @@ func NewJSONResultHandler(indicator *Indicator) (*JSONResultHandler, prom.Result
 		result: &IndicatorResult{ // 初始化最终要返回的 JSON 结构
 			Indicator:   indicator.Name,
 			Type:        indicator.Type,
+			Description: indicator.Description,
 			Unit:        indicator.Display.Unit,
 			DisplayType: indicator.Display.Type,
 			Summary:     Summary{}, // 用于统计总数量、各状态数量

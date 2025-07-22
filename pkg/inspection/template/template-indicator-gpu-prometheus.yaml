@@ -1,7 +1,7 @@
 ###############################################################################
 # GPU 节点每日巡检模板（支持 TimeRange 多级 fallback，统一变量声明）
 ###############################################################################
-template_name: daily-gpu-inspection
+name: daily-gpu-inspection
 display_name: GPU 节点每日巡检
 description: 每日检查 GPU 节点的使用率、告警与网络可达性
 version: v2

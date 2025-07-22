@@ -30,7 +30,7 @@ var ThresholdLevelPriorities = map[string]int{
 }
 
 type Template struct {
-	TemplateName   string         `yaml:"template_name" validate:"required"`
+	Name           string         `yaml:"name" validate:"required"`
 	DisplayName    string         `yaml:"display_name" validate:"required"`
 	Description    string         `yaml:"description"`
 	Version        string         `yaml:"version"`
