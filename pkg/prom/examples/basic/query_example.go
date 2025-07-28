@@ -1,8 +1,7 @@
-package main
+package basic
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"time"
@@ -12,24 +11,13 @@ import (
 	"github.com/kekexiaoai/inspection/pkg/prom"
 )
 
-func main() {
-	// 从命令行参数获取配置
-	serverURL := flag.String("server", "http://10.120.1.6:9090", "Prometheus server URL")
-	timeout := flag.Duration("timeout", 10*time.Second, "Query timeout")
-	flag.Parse()
-
-	// 创建 Prometheus 客户端
-	client, err := prom.NewClient(*serverURL, prom.WithTimeout(*timeout))
-	if err != nil {
-		log.Fatalf("Error creating client: %v", err)
-	}
+func RunBasicExamples(client *prom.Client) {
 	defer client.Close()
 
 	ctx := context.Background()
-
 	now := time.Now()
 
-	// 示例 1: 简单即时查询 - 获取所有目标的状态
+	// 示例 1: 简单即时查询
 	if err := executeInstantQuery(ctx, client, "up", now); err != nil {
 		log.Printf("Instant query failed: %v", err)
 	}
@@ -39,13 +27,13 @@ func main() {
 		log.Printf("Filtered instant query failed: %v", err)
 	}
 
-	// 示例 3: 范围查询 - 获取时间序列数据
+	// 示例 3: 范围查询
 	rangeQuery := "rate(prometheus_tsdb_head_samples_appended_total[5m])"
 	if err := executeRangeQuery(ctx, client, rangeQuery, now.Add(-1*time.Hour), now, time.Minute); err != nil {
 		log.Printf("Range query failed: %v", err)
 	}
 
-	// 示例 4: 使用自定义处理器处理查询结果
+	// 示例 4: 使用自定义处理器
 	if err := executeCustomQuery(ctx, client, "up", now); err != nil {
 		log.Printf("Custom query failed: %v", err)
 	}

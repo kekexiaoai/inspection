@@ -97,6 +97,13 @@ func (c *Client) QueryRange(query string, r v1.Range) (model.Value, v1.Warnings,
 	return c.api.QueryRange(ctx, query, r)
 }
 
+// Targets retrieves the current overview using the configured timeout.
+func (c *Client) Targets() (v1.TargetsResult, error) {
+	ctx, cancel := context.WithTimeout(c.ctx, c.queryTimeout)
+	defer cancel()
+	return c.api.Targets(ctx)
+}
+
 // Alerts retrieves the current alert overview using the configured timeout.
 func (c *Client) Alerts() (v1.AlertsResult, error) {
 	ctx, cancel := context.WithTimeout(c.ctx, c.queryTimeout)
