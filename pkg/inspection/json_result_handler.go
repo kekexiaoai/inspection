@@ -13,8 +13,9 @@ import (
 
 // JSONResultHandler 封装累积结果的状态
 type JSONResultHandler struct {
-	indicator *Indicator
-	result    *IndicatorResult
+	indicator          *Indicator
+	indexedTargetCache *prom.IndexedTargetCache
+	result             *IndicatorResult
 	// 用于临时存储所有样本（因为处理器会被多次调用，每次处理一个样本）
 	samples []*model.Sample
 }
@@ -23,10 +24,11 @@ type JSONResultHandler struct {
 // 返回值：
 //   - *JSONResultHandler：结构体指针，用于在所有数据处理完成后调用 Finalize() 生成最终结果
 //   - prom.ResultHandler：处理器函数，用于传递给 prom 包处理查询结果
-func NewJSONResultHandler(indicator *Indicator) (*JSONResultHandler, prom.ResultHandler) {
+func NewJSONResultHandler(indicator *Indicator, cache *prom.IndexedTargetCache) (*JSONResultHandler, prom.ResultHandler) {
 	// 初始化处理器结构体，存储指标元信息和临时数据
 	handler := &JSONResultHandler{
-		indicator: indicator, // 保存指标元信息（如名称、阈值、显示配置等）
+		indicator:          indicator, // 保存指标元信息（如名称、阈值、显示配置等）
+		indexedTargetCache: cache,
 		result: &IndicatorResult{ // 初始化最终要返回的 JSON 结构
 			Indicator:   indicator.Name,
 			Type:        indicator.Type,
@@ -101,33 +103,69 @@ func (h *JSONResultHandler) Finalize() (*IndicatorResult, error) {
 	return h.result, nil
 }
 
-// 处理 *model.Sample 样本集合（复用 addValueItem 统一逻辑）
+func (h *JSONResultHandler) extractTarget(labels model.LabelSet) string {
+	// 优先检查 instance 标签
+	if instance, ok := labels["instance"]; ok && len(instance) > 0 {
+		return string(instance)
+	}
+
+	// 其次检查 node 标签
+	if node, ok := labels["node"]; ok && len(node) > 0 {
+		return string(node)
+	}
+
+	// 最后使用所有标签的字符串表示
+	if len(labels) > 0 {
+		return labels.String()
+	}
+
+	return ""
+}
+
 func (h *JSONResultHandler) processSamples() {
+	// 预分配合理的容量
+	exists := make(map[string]struct{}, len(h.samples))
+
+	// 处理存在的样本
 	for _, sample := range h.samples {
-		// 1. 提取目标名称（优先取 "instance"，其次取 "node"）
-		target := ""
-		if instance, ok := sample.Metric["instance"]; ok {
-			target = string(instance)
-		} else if node, ok := sample.Metric["node"]; ok {
-			target = string(node)
-		} else {
-			// 无明确标签时，用所有标签拼接作为名称
-			target = sample.Metric.String()
+		target := h.extractTarget(model.LabelSet(sample.Metric))
+		if target == "" {
+			continue // 跳过空目标
 		}
 
-		// 2. 提取数值并计算状态
+		exists[target] = struct{}{}
+
 		value := float64(sample.Value)
 		status := h.determineStatus(value)
-
-		// 3. 统一添加数据项并更新统计（复用 addValueItem 方法）
 		h.addValueItem(target, &value, false, status)
+	}
+
+	// 处理缺失的目标
+	targets := h.indexedTargetCache.GetTargetsByPool(h.indicator.Exporter)
+	if len(targets) > 0 { // 提前检查避免不必要的遍历
+		missingTargets := make([]string, 0, len(targets)/2) // 预估容量
+
+		for _, target := range targets {
+			targetName := h.extractTarget(target.Labels)
+			if targetName == "" {
+				continue
+			}
+
+			if _, found := exists[targetName]; !found {
+				missingTargets = append(missingTargets, targetName)
+			}
+		}
+
+		// 批量处理缺失的目标
+		for _, targetName := range missingTargets {
+			h.addValueItem(targetName, nil, true)
+		}
 	}
 }
 
 // handleSampleStream 处理 *model.SampleStream 类型的时间序列流
-// 注：此方法为示例实现，需根据实际业务需求调整
 func (h *JSONResultHandler) handleSampleStream(stream *model.SampleStream) error {
-	// 1. 提取时间序列的标签信息
+	// 提取时间序列的标签信息
 	target := ""
 	if instance, ok := stream.Metric["instance"]; ok {
 		target = string(instance)
@@ -135,7 +173,7 @@ func (h *JSONResultHandler) handleSampleStream(stream *model.SampleStream) error
 		target = stream.Metric.String()
 	}
 
-	// 2. 从时间序列中提取关键值
+	// 从时间序列中提取关键值
 	if len(stream.Values) == 0 {
 		// 无数据时标记为缺失
 		h.addValueItem(target, nil, true)
@@ -144,7 +182,7 @@ func (h *JSONResultHandler) handleSampleStream(stream *model.SampleStream) error
 	latestValue := stream.Values[len(stream.Values)-1]
 	currentValue := float64(latestValue.Value)
 
-	// 3. 计算状态并添加到结果集
+	// 计算状态并添加到结果集
 	status := h.determineStatus(currentValue)
 	h.addValueItem(target, &currentValue, false, status)
 
@@ -204,7 +242,7 @@ func (h *JSONResultHandler) determineStatus(value float64) string {
 }
 
 func (h *JSONResultHandler) handleMissingValues() {
-	// 处理缺失值逻辑（根据业务需求补充）
+
 }
 
 func (h *JSONResultHandler) applyPagination() {
@@ -240,14 +278,14 @@ func (h *JSONResultHandler) sortAndExtractHighlights() {
 		return
 	}
 
-	// 1. 按逻辑过滤符合条件的项（支持 and/or）
+	// 按逻辑过滤符合条件的项（支持 and/or）
 	logic := config.Logic
 	if logic == "" {
 		logic = LogicOr // 兜底默认 or（与 ParseTemplateBytes 保持一致）
 	}
 	filtered := h.filterByConditions(config.Conditions, logic)
 
-	// 2. 解析 limit 并排序
+	// 解析 limit 并排序
 	limit := h.parseHighlightLimit(config.Limit)
 	if limit > 0 && len(filtered) > limit {
 		// 根据 limit 类型排序（top 降序，bottom 升序）
@@ -263,7 +301,7 @@ func (h *JSONResultHandler) sortAndExtractHighlights() {
 		filtered = filtered[:limit] // 截取前 N 项
 	}
 
-	// 3. 赋值最终高亮结果
+	// 赋值最终高亮结果
 	h.result.Highlight.Values = filtered
 }
 

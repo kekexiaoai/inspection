@@ -19,6 +19,7 @@ type SummaryOverview struct {
 	Unit      string `json:"unit"`
 	Total     int    `json:"total"`
 	Ok        int    `json:"ok"`
+	Info      int    `json:"info"`
 	Warning   int    `json:"warning"`
 	Critical  int    `json:"critical"`
 	Missing   int    `json:"missing"`

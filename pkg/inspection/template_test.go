@@ -13,6 +13,8 @@ import (
 )
 
 var globalClient *prom.Client
+var indexedPromTargetCache *prom.IndexedTargetCache
+var dcID = "01fd9896-3e25-4d68-b7ce-c20ab7ee13ca"
 
 func TestMain(m *testing.M) {
 	var err error
@@ -23,6 +25,28 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	defer globalClient.Close()
+
+	indexedPromTargetCache = prom.NewIndexedTargetCache(globalClient, 60*time.Second)
+	defer indexedPromTargetCache.Close()
+
+	// 过滤标签，组装 map
+	// targetMap = make(map[string]v1.ActiveTarget)
+
+	// targets := indexedPromTargetCache.GetTargetsByPool("node_exporter")
+	// fmt.Printf("targets: %v", targets)
+
+	// for _, target := range targets {
+	// 	if target.Labels["instance"] == "" {
+	// 		continue
+	// 	}
+	// 	instance := string(target.Labels["instance"])
+	// 	// 过滤掉 data_center_id标签不符合给定值
+	// 	if string(target.Labels["data_center_id"]) != dcID {
+	// 		continue
+	// 	}
+	// 	_target := strings.Split(instance, ":")[0]
+	// 	targetMap[_target] = target
+	// }
 
 	code := m.Run()
 	os.Exit(code)
@@ -240,7 +264,7 @@ func TestRenderGPUUsageWithJSON_result(t *testing.T) {
 	}
 
 	// 创建处理器：同时获取结构体指针和处理器函数
-	jsonHandler, resultHandler := NewJSONResultHandler(ind)
+	jsonHandler, resultHandler := NewJSONResultHandler(ind, indexedPromTargetCache)
 
 	// 执行查询：传递 resultHandler 给 prom 包
 	now := time.Now()
@@ -274,7 +298,7 @@ func TestRenderGPUUsageWithJSON_result_2(t *testing.T) {
 	fmt.Println("Rendered Query:\n", query)
 
 	// 创建处理器：同时获取结构体指针和处理器函数
-	jsonHandler, resultHandler := NewJSONResultHandler(ind)
+	jsonHandler, resultHandler := NewJSONResultHandler(ind, indexedPromTargetCache)
 
 	// 执行查询：传递 resultHandler 给 prom 包
 	now := time.Now()
@@ -297,6 +321,7 @@ func TestRenderTemplate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	tpl.DataCenter.ID = dcID
 	now := time.Now()
 	result := &Report{}
 	result.Template.Name = tpl.Name
@@ -306,16 +331,19 @@ func TestRenderTemplate(t *testing.T) {
 	result.Sections = tpl.ReportLayout.Sections
 
 	for _, ind := range tpl.Indicators {
+		if !*ind.Enabled {
+			continue
+		}
 		query, err := tpl.RenderQueryWithVars(ind, map[string]string{
 			// "ClusterRegex": `10\\.120\\.[0-9]+\\.[0-9]+`,
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
-		// fmt.Println("Rendered Query:\n", query)
+		fmt.Println("Rendered Query:\n", query)
 
 		// 创建处理器：同时获取结构体指针和处理器函数
-		jsonHandler, resultHandler := NewJSONResultHandler(ind)
+		jsonHandler, resultHandler := NewJSONResultHandler(ind, indexedPromTargetCache)
 		if err := prom.ExecuteQuery(globalClient, query, now, resultHandler); err != nil {
 			t.Fatalf("Query failed: %v", err)
 		}
@@ -331,6 +359,7 @@ func TestRenderTemplate(t *testing.T) {
 			Unit:      indResult.Unit,
 			Total:     indResult.Summary.Total,
 			Ok:        indResult.Summary.Ok,
+			Info:      indResult.Summary.Info,
 			Warning:   indResult.Summary.Warning,
 			Critical:  indResult.Summary.Critical,
 			Missing:   indResult.Summary.Missing,

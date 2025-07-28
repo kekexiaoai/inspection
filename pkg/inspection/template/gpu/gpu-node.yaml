@@ -39,6 +39,12 @@ target_registry:
 # 全局变量定义，如果indicator中定义了，则会被覆盖
 # -----------------------------------------
 vars:
+  - name: DataCenterID
+    type: string
+    required: true
+    default_value: "{{.DataCenterID}}"
+    description: 数据中心ID
+
   - name: TimeRange
     type: string
     required: true
@@ -66,21 +72,79 @@ indicators:
   # 节点存活与基础状态
   # ---------------------------
   - name: 节点存活状态
+    enabled: false # 未指定 enabled 时，默认开启
     source: prometheus
+    exporter: node_exporter #上报此指标的 exporter
     type: point
-    description: 节点是否在线（基于node_exporter存活探针）
+    description: 节点是否在运行中
     query: |
-      up{app="node-exporter", device_type=~"{{.DeviceTypeRegex}}"}
+      up{app="{{.App}}", data_center_id="{{.DataCenterID}}", device_group="{{.DeviceTypeGroup}}"}
     thresholds:
       - level: critical
         value: 0
         operator: eq
         description: 节点离线
-      - level: info
+      - level: ok
         value: 1
         operator: eq
         description: 节点在线
     vars:
+      - name: App
+        type: string
+        required: true
+        default_value: "node-exporter"
+      - name: DeviceTypeRegex
+        type: string
+        required: true
+        default_value: ".*"
+      - name: DeviceTypeGroup
+        type: string
+        required: true
+        default_value: "gpu"
+
+    display:
+      type: table
+      unit: "台"
+      group_by: instance
+      summary_mode: count_by_status
+      highlight:
+        enabled: true        # 支持按条件高亮
+        limit: all           # 支持 "all"、"top_n"、"bottom_n"
+        conditions:          # 支持多条件
+          - level: critical  # 支持按级别(可选，如果填写了级别，则会在级别内匹配条件)
+            value: 0        # 支持按阈值(可选, value和 operator 必须同时出现)
+            operator: eq     # 支持按操作符(可选, value和 operator 必须同时出现)
+      missing_indicator: true
+      fields:
+        - { name: target, label: 节点 }
+        - { name: value, label: 存活状态 }
+        - { name: status, label: 状态 }
+
+  # ---------------------------
+  # 节点存活与基础状态
+  # ---------------------------
+  - name: 节点存活状态2
+    enabled: false # 未指定 enabled 时，默认开启
+    source: prometheus
+    exporter: gpu_exporter #上报此指标的 exporter
+    type: point
+    description: 节点是否在运行中
+    query: |
+      up{app="{{.App}}", data_center_id="{{.DataCenterID}}"}
+    thresholds:
+      - level: critical
+        value: 0
+        operator: eq
+        description: 节点离线
+      - level: ok
+        value: 1
+        operator: eq
+        description: 节点在线
+    vars:
+      - name: App
+        type: string
+        required: true
+        default_value: "gpu_exporter"
       - name: DeviceTypeRegex
         type: string
         required: true
@@ -106,11 +170,13 @@ indicators:
 
 
   - name: 节点平均GPU算力利用率
+    enabled: false # 未指定 enabled 时，默认开启
     source: prometheus
+    exporter: gpu_exporter #上报此指标的 exporter
     type: range
     description: 节点内所有GPU卡的平均算力利用率（反映整体负载）
     query: |
-      avg by (instance) (avg_over_time(nvidia_smi_utilization_gpu_ratio[{{.TimeRange}}])) * 100
+      avg by (instance) (avg_over_time(nvidia_smi_utilization_gpu_ratio{data_center_id='{{.DataCenterID}}'}[{{.TimeRange}}])) * 100
     time_range: 24h
     thresholds:
       - level: warning
@@ -141,12 +207,14 @@ indicators:
 
 
   - name: 节点内最高GPU温度
+    enabled: false # 未指定 enabled 时，默认开启
     source: prometheus
+    exporter: gpu_exporter #上报此指标的 exporter
     type: range
     description: 节点内所有GPU卡的最高温度（反映散热风险）
     query: |
       max by (instance) (
-        max_over_time(nvidia_smi_temperature_gpu[{{.TimeRange}}])
+        max_over_time(nvidia_smi_temperature_gpu{data_center_id='{{.DataCenterID}}'}[{{.TimeRange}}])
       )
     #time_range: 1h
     thresholds:
@@ -184,12 +252,14 @@ indicators:
 
 
   - name: 节点平均GPU温度
+    enabled: true # 未指定 enabled 时，默认开启
     source: prometheus
+    exporter: gpu_exporter #上报此指标的 exporter
     type: range
     description: 节点内所有GPU卡的平均温度
     query: |
       avg by (instance) (
-        max_over_time(nvidia_smi_temperature_gpu[{{.TimeRange}}])
+        max_over_time(nvidia_smi_temperature_gpu{data_center_id='{{.DataCenterID}}'}[{{.TimeRange}}])
       )
     #time_range: 1h
     thresholds:

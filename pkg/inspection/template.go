@@ -42,6 +42,7 @@ type Template struct {
 	Vars           []Variable     `yaml:"vars" validate:"dive"` // 全局变量
 	Indicators     []*Indicator   `yaml:"indicators" validate:"required,min=1,dive"`
 	ReportLayout   ReportLayout   `yaml:"report_layout" validate:"required"`
+	DataCenter     DataCenter     `yaml:"data_center"`
 }
 
 // SortIndicatorThresholds 解析模板后调用，对阈值按优先级排序
@@ -52,6 +53,11 @@ func (tpl *Template) SortIndicatorThresholds() {
 			return ThresholdLevelPriorities[(*ind).Thresholds[i].Level] < ThresholdLevelPriorities[(*ind).Thresholds[j].Level]
 		})
 	}
+}
+
+type DataCenter struct {
+	ID   string `yaml:"id"`
+	Name string `yaml:"name"`
 }
 
 type Schedule struct {
@@ -69,6 +75,8 @@ type Indicator struct {
 	Name        string       `yaml:"name" validate:"required"`
 	Description string       `yaml:"description"`
 	Source      string       `yaml:"source" validate:"required,oneof=prometheus elasticsearch metadata"`
+	Exporter    string       `yaml:"exporter" validate:"required"`
+	Enabled     *bool        `yaml:"enabled"`
 	Type        string       `yaml:"type"   validate:"required,oneof=point range trend alert_list"`
 	Query       any          `yaml:"query" validate:"required"`
 	TimeRange   string       `yaml:"time_range"`
@@ -125,10 +133,10 @@ func meetsCondition(value float64, op string, threshold float64) bool {
 }
 
 type Threshold struct {
-	Level       string   `yaml:"level" validate:"required,oneof=critical warning info"` // 状态级别
-	Value       *float64 `yaml:"value" validate:"required"`                             // 阈值数值
-	Operator    string   `yaml:"operator" validate:"required,oneof=gt gte lt lte eq"`   // 运算符
-	Description string   `yaml:"description" validate:"required"`                       // 状态描述
+	Level       string   `yaml:"level" validate:"required,oneof=critical warning info ok"` // 状态级别
+	Value       *float64 `yaml:"value" validate:"required"`                                // 阈值数值
+	Operator    string   `yaml:"operator" validate:"required,oneof=gt gte lt lte eq"`      // 运算符
+	Description string   `yaml:"description" validate:"required"`                          // 状态描述
 }
 
 type Variable struct {
@@ -273,6 +281,11 @@ func ParseTemplateBytes(data []byte) (*Template, error) {
 	// tpl.SortIndicatorThresholds()
 	// 验证每个指标的阈值顺序和高亮配置
 	for _, ind := range tpl.Indicators {
+		// 未指定 enabled 时，默认开启
+		if ind.Enabled == nil {
+			ind.Enabled = new(bool)
+			*ind.Enabled = true
+		}
 		if err := validateThresholdOrder(ind); err != nil {
 			return nil, fmt.Errorf("indicator %s: %w", ind.Name, err)
 		}
@@ -409,6 +422,10 @@ func (tpl *Template) RenderQueryWithVars(ind *Indicator, input map[string]string
 		} else {
 			values["TimeRange"] = values["GlobalTimeRange"]
 		}
+	}
+	// 注入数据中心数据
+	if _, ok := values["DataCenterId"]; !ok {
+		values["DataCenterID"] = tpl.DataCenter.ID
 	}
 
 	// 渲染最终查询
